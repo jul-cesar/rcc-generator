@@ -33,7 +33,7 @@ export function toSafeError(error: unknown, secrets: readonly string[] = []) {
       ? error
       : new AppError(
           "INTERNAL_ERROR",
-          error instanceof Error ? error.message : "Error interno",
+          "Error interno",
           error instanceof Error ? { cause: error } : undefined,
         )
 

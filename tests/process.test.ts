@@ -38,6 +38,6 @@ test("redacts PAT and authorization header from safe errors", () => {
   assert.equal(redactSecrets(raw, [pat, header]), "[REDACTED] [REDACTED]")
   assert.deepEqual(toSafeError(new Error(raw), [pat, header]), {
     code: "INTERNAL_ERROR",
-    message: "[REDACTED] [REDACTED]",
+    message: "Error interno",
   })
 })
