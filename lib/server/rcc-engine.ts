@@ -288,7 +288,11 @@ export async function generateIncrementalRcc(
       ordinal: event.ordinal,
     })
   }
-  consolidated.sort((left, right) => left.ordinal - right.ordinal)
+  // Rows are serialized in path-lexical order (git ls-tree order); ordinals
+  // remain only for lastChangedTag attribution above.
+  consolidated.sort((left, right) =>
+    left.row.path < right.row.path ? -1 : left.row.path > right.row.path ? 1 : 0
+  )
 
   return {
     mode: "incremental",

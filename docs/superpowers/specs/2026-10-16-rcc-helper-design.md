@@ -240,6 +240,8 @@ No se incluyen archivos no versionados porque un repositorio remoto bare no tien
 6. Emitir únicamente las rutas presentes en esa diferencia neta.
 7. Asignar el último tag registrado a cada fila neta.
 
+Las filas se serializan en orden léxico por ruta (orden de `git ls-tree`); los tags reflejan el último cambio cronológico de cada ruta (los ordinales se usan solo para esa atribución).
+
 La acción se determina por el estado neto:
 
 - `A`: agregado entre los extremos, aunque después haya sido modificado.

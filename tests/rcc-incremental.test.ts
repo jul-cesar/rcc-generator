@@ -56,8 +56,8 @@ test("consolidates net changes with their last deployment tag", async () => {
       lastChangedTag,
     })),
     [
-      { path: "deleted.txt", action: "D", lastChangedTag: "develop_v2" },
       { path: "added.txt", action: "A", lastChangedTag: "develop_v3" },
+      { path: "deleted.txt", action: "D", lastChangedTag: "develop_v2" },
       { path: "multi.txt", action: "M", lastChangedTag: "develop_v3" },
     ]
   )

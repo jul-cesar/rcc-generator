@@ -170,7 +170,7 @@ git commit -m "feat: generate initial RCC data"
 
 - Consumes: deployment catalog from Task 2.
 - Produces: `generateIncrementalRcc(repoPath, fromTag, toTag, options): Promise<RccResult>`.
-- Produces rows ordered by their final chronological change event, preserving Git order within one deployment.
+- Produces rows ordered lexically by path (git ls-tree order), keeping chronological tag attribution.
 
 - [ ] **Step 1: Write failing core consolidation tests**
 
@@ -192,7 +192,7 @@ Expected: FAIL because incremental generation is not implemented.
 
 - [ ] **Step 5: Implement chronological event tracking**
 
-Compare every consecutive deployment pair from the initial tag exclusive to the final tag inclusive. For renames, transfer lineage from old path to new path and record the current tag. Track event ordinals for stable chronological result ordering.
+Compare every consecutive deployment pair from the initial tag exclusive to the final tag inclusive. For renames, transfer lineage from old path to new path and record the current tag. Track event ordinals solely for lastChangedTag attribution; results are ordered lexically by path.
 
 - [ ] **Step 6: Implement endpoint consolidation**
 
