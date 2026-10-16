@@ -25,7 +25,7 @@ export default function RootLayout({
       className={cn("font-sans antialiased", inter.variable, fontMono.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider defaultTheme="light">{children}</ThemeProvider>
       </body>
     </html>
   )

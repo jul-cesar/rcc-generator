@@ -171,7 +171,7 @@ export function RccWorkbench() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-12">
-      <header className="flex flex-col gap-5 rounded-3xl border bg-card/70 p-6 shadow-sm backdrop-blur sm:p-8 md:flex-row md:items-end md:justify-between">
+      <header className="flex flex-col gap-5 rounded-3xl border  p-6 shadow-sm backdrop-blur sm:p-8 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
             <GitBranch className="size-3.5" />
