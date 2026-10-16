@@ -61,6 +61,9 @@ function SelectField({
         {label}
       </label>
       <Select
+        items={Object.fromEntries(
+          options.map((option) => [option.value, option.label])
+        )}
         value={value || null}
         onValueChange={(nextValue) => nextValue && onChange(nextValue)}
         disabled={disabled}
