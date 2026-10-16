@@ -13,7 +13,7 @@ const env = { AZURE_DEVOPS_EXT_PAT: "test-pat" }
 type Runner = (
   command: string,
   args: readonly string[],
-  options?: ProcessOptions,
+  options?: ProcessOptions
 ) => Promise<ProcessResult>
 
 function result(value: unknown): ProcessResult {
@@ -44,7 +44,7 @@ test("discovers projects and resolves repositories inside the authorized catalog
               ignored: true,
             },
           ]
-        : [],
+        : []
     )
   }
   const client = createAzureDevOpsClient({ runner, env })
@@ -62,12 +62,15 @@ test("discovers projects and resolves repositories inside the authorized catalog
     projectId: PROJECT_TWO,
     remoteUrl: "https://dev.azure.com/alianzaapps/Dos/_git/Repo",
   })
-  assert.equal(calls.every((call) => call.command === "az"), true)
+  assert.equal(
+    calls.every((call) => call.command === "az"),
+    true
+  )
   assert.equal(
     calls.every((call) =>
-      call.args.includes("https://dev.azure.com/alianzaapps"),
+      call.args.includes("https://dev.azure.com/alianzaapps")
     ),
-    true,
+    true
   )
 })
 
@@ -92,7 +95,7 @@ test("classifies missing, rejected, forbidden, and network authentication failur
   const unused: Runner = async () => result([])
   await assert.rejects(
     createAzureDevOpsClient({ runner: unused, env: {} }).listProjects(),
-    { code: "AUTH_MISSING" },
+    { code: "AUTH_MISSING" }
   )
 
   const cases = [
@@ -110,7 +113,7 @@ test("classifies missing, rejected, forbidden, and network authentication failur
       (error: unknown) =>
         error instanceof AppError &&
         error.code === code &&
-        !error.message.includes(message),
+        !error.message.includes(message)
     )
   }
 })
@@ -122,7 +125,9 @@ test("rejects a repository outside accessible projects", async () => {
       : result([])
 
   await assert.rejects(
-    createAzureDevOpsClient({ runner, env }).resolveAuthorizedRepository(REPOSITORY),
-    { code: "NOT_FOUND" },
+    createAzureDevOpsClient({ runner, env }).resolveAuthorizedRepository(
+      REPOSITORY
+    ),
+    { code: "NOT_FOUND" }
   )
 })

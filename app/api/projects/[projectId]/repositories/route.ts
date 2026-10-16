@@ -8,7 +8,9 @@ interface RouteContext {
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const { projectId } = await context.params
-    return Response.json({ repositories: await listRepositories(assertUuid(projectId)) })
+    return Response.json({
+      repositories: await listRepositories(assertUuid(projectId)),
+    })
   } catch (error) {
     return errorResponse(error)
   }

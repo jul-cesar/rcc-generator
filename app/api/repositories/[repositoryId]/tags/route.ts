@@ -11,7 +11,9 @@ interface RouteContext {
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const { repositoryId } = await context.params
-    const repository = await resolveAuthorizedRepository(assertUuid(repositoryId))
+    const repository = await resolveAuthorizedRepository(
+      assertUuid(repositoryId)
+    )
     const catalog = await withUpdatedRepository(repository, (repoPath) => {
       const config = getServerConfig()
       return listDeploymentTags(repoPath, {
@@ -22,7 +24,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return Response.json({
       ...catalog,
       warnings: catalog.ambiguities.map(
-        ({ sha, tags }) => `Tags ambiguos en ${sha}: ${tags.join(", ")}`,
+        ({ sha, tags }) => `Tags ambiguos en ${sha}: ${tags.join(", ")}`
       ),
     })
   } catch (error) {

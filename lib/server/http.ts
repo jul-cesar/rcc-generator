@@ -91,6 +91,6 @@ export function errorResponse(error: unknown): Response {
   const safe = toSafeError(error)
   return Response.json(
     { error: safe },
-    { status: ERROR_STATUS[safe.code] ?? 500 },
+    { status: ERROR_STATUS[safe.code] ?? 500 }
   )
 }

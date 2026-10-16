@@ -1,6 +1,10 @@
 "use client"
 
-import type { DeploymentTag, ProjectSummary, RepositorySummary } from "@/lib/rcc/types"
+import type {
+  DeploymentTag,
+  ProjectSummary,
+  RepositorySummary,
+} from "@/lib/rcc/types"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -61,7 +65,10 @@ function SelectField({
         onValueChange={(nextValue) => nextValue && onChange(nextValue)}
         disabled={disabled}
       >
-        <SelectTrigger id={id} className="w-full rounded-xl border-border bg-background">
+        <SelectTrigger
+          id={id}
+          className="w-full rounded-xl border-border bg-background"
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -85,7 +92,10 @@ export function RccForm(props: RccFormProps) {
     (props.mode === "initial" || props.fromTag !== "")
 
   return (
-    <section className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6" aria-labelledby="rcc-form-title">
+    <section
+      className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6"
+      aria-labelledby="rcc-form-title"
+    >
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h2 id="rcc-form-title" className="text-lg font-semibold">
@@ -96,7 +106,10 @@ export function RccForm(props: RccFormProps) {
           </p>
         </div>
         {busy && (
-          <LoaderCircle className="mt-1 size-5 animate-spin text-muted-foreground" aria-label="Cargando" />
+          <LoaderCircle
+            className="mt-1 size-5 animate-spin text-muted-foreground"
+            aria-label="Cargando"
+          />
         )}
       </div>
 
@@ -105,8 +118,15 @@ export function RccForm(props: RccFormProps) {
           id="project"
           label="Proyecto"
           value={props.projectId}
-          placeholder={props.loading === "projects" ? "Cargando proyectos…" : "Selecciona un proyecto"}
-          options={props.projects.map(({ id, name }) => ({ value: id, label: name }))}
+          placeholder={
+            props.loading === "projects"
+              ? "Cargando proyectos…"
+              : "Selecciona un proyecto"
+          }
+          options={props.projects.map(({ id, name }) => ({
+            value: id,
+            label: name,
+          }))}
           disabled={busy || props.projects.length === 0}
           onChange={props.onProjectChange}
         />
@@ -114,8 +134,15 @@ export function RccForm(props: RccFormProps) {
           id="repository"
           label="Repositorio"
           value={props.repositoryId}
-          placeholder={props.loading === "repositories" ? "Cargando repositorios…" : "Selecciona un repositorio"}
-          options={props.repositories.map(({ id, name }) => ({ value: id, label: name }))}
+          placeholder={
+            props.loading === "repositories"
+              ? "Cargando repositorios…"
+              : "Selecciona un repositorio"
+          }
+          options={props.repositories.map(({ id, name }) => ({
+            value: id,
+            label: name,
+          }))}
           disabled={busy || !props.projectId || props.repositories.length === 0}
           onChange={props.onRepositoryChange}
         />
@@ -137,7 +164,10 @@ export function RccForm(props: RccFormProps) {
             label="Entrega anterior"
             value={props.fromTag}
             placeholder="Tag inicial (no se incluye)"
-            options={props.tags.map(({ name }) => ({ value: name, label: name }))}
+            options={props.tags.map(({ name }) => ({
+              value: name,
+              label: name,
+            }))}
             disabled={busy || !props.repositoryId || props.tags.length === 0}
             onChange={props.onFromTagChange}
           />

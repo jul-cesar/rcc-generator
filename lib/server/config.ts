@@ -10,12 +10,15 @@ export interface ServerConfig {
 }
 
 export function getServerConfig(
-  env: Readonly<Record<string, string | undefined>> = process.env,
+  env: Readonly<Record<string, string | undefined>> = process.env
 ): ServerConfig {
   const pat = env.AZURE_DEVOPS_EXT_PAT?.trim()
 
   if (!pat) {
-    throw new AppError("AUTH_MISSING", "AZURE_DEVOPS_EXT_PAT no está configurado")
+    throw new AppError(
+      "AUTH_MISSING",
+      "AZURE_DEVOPS_EXT_PAT no está configurado"
+    )
   }
 
   return {

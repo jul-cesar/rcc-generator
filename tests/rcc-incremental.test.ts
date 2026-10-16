@@ -46,7 +46,7 @@ test("consolidates net changes with their last deployment tag", async () => {
     repo.bare,
     "develop_v1",
     "develop_v3",
-    options,
+    options
   )
 
   assert.deepEqual(
@@ -59,22 +59,28 @@ test("consolidates net changes with their last deployment tag", async () => {
       { path: "deleted.txt", action: "D", lastChangedTag: "develop_v2" },
       { path: "added.txt", action: "A", lastChangedTag: "develop_v3" },
       { path: "multi.txt", action: "M", lastChangedTag: "develop_v3" },
-    ],
+    ]
   )
-  assert.equal(result.rows.some((row) => row.path === "reverted.txt"), false)
+  assert.equal(
+    result.rows.some((row) => row.path === "reverted.txt"),
+    false
+  )
 
   const unchanged = await generateIncrementalRcc(
     repo.bare,
     "develop_v3",
     "develop_v4",
-    options,
+    options
   )
   assert.deepEqual(unchanged.rows, [])
 })
 
 test("tracks a rename followed by modification", async () => {
   const repo = fixture()
-  const original = Array.from({ length: 20 }, (_, index) => `line ${index}`).join("\n")
+  const original = Array.from(
+    { length: 20 },
+    (_, index) => `line ${index}`
+  ).join("\n")
   repo.write("src/old name.txt", original)
   repo.commit("v1")
   repo.tag("develop_v1")
@@ -92,7 +98,7 @@ test("tracks a rename followed by modification", async () => {
     repo.bare,
     "develop_v1",
     "develop_v3",
-    options,
+    options
   )
 
   assert.deepEqual(result.rows, [
@@ -123,7 +129,7 @@ test("includes changes introduced by a merge", async () => {
     repo.bare,
     "develop_v1",
     "develop_v2",
-    options,
+    options
   )
 
   assert.deepEqual(result.rows, [
@@ -159,21 +165,21 @@ test("rejects inverted, divergent, and ambiguous histories", async () => {
 
   await assert.rejects(
     generateIncrementalRcc(repo.bare, "develop_v3", "develop_v1", options),
-    /invertido/i,
+    /invertido/i
   )
   await assert.rejects(
     generateIncrementalRcc(repo.bare, "develop_v-side", "develop_v3", options),
-    /historial|válido/i,
+    /historial|válido/i
   )
   await assert.rejects(
     generateIncrementalRcc(repo.bare, "develop_v1", "develop_v3", options),
-    /ambiguos/i,
+    /ambiguos/i
   )
 })
 
 test("parses NUL-delimited add, modify, delete, and rename records", () => {
   const output = Buffer.from(
-    "M\0a b.txt\0A\0tab\tfile.txt\0D\0ñ.txt\0R100\0old.txt\0new.txt\0",
+    "M\0a b.txt\0A\0tab\tfile.txt\0D\0ñ.txt\0R100\0old.txt\0new.txt\0"
   )
 
   assert.deepEqual(parseNameStatus(output), [

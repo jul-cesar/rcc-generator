@@ -20,7 +20,7 @@ export interface ProcessOptions {
 export function runProcess(
   command: string,
   args: readonly string[],
-  options: ProcessOptions = {},
+  options: ProcessOptions = {}
 ): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
@@ -37,7 +37,12 @@ export function runProcess(
 
     if (!childStdout || !childStderr) {
       child.kill()
-      reject(new AppError("PROCESS_FAILED", "No se pudo capturar la salida del proceso"))
+      reject(
+        new AppError(
+          "PROCESS_FAILED",
+          "No se pudo capturar la salida del proceso"
+        )
+      )
       return
     }
 
@@ -48,8 +53,8 @@ export function runProcess(
         new AppError(
           "PROCESS_FAILED",
           redactSecrets(error.message, options.secrets ?? []),
-          { cause: error },
-        ),
+          { cause: error }
+        )
       )
     })
     child.on("close", (exitCode) => {
@@ -63,9 +68,9 @@ export function runProcess(
             "PROCESS_FAILED",
             redactSecrets(
               stderrText.trim() || `${command} finalizó con código ${exitCode}`,
-              options.secrets ?? [],
-            ),
-          ),
+              options.secrets ?? []
+            )
+          )
         )
         return
       }
@@ -80,7 +85,9 @@ export function runProcess(
     if (options.input !== undefined) {
       if (!child.stdin) {
         child.kill()
-        reject(new AppError("PROCESS_FAILED", "No se pudo enviar datos al proceso"))
+        reject(
+          new AppError("PROCESS_FAILED", "No se pudo enviar datos al proceso")
+        )
         return
       }
       child.stdin.end(options.input)

@@ -28,7 +28,7 @@ function lines(output: Buffer): string[] {
 
 export async function listDeploymentTags(
   repoPath: string,
-  options: RccEngineOptions,
+  options: RccEngineOptions
 ): Promise<DeploymentTagCatalog> {
   const [tagNames, firstParentHistory] = await Promise.all([
     git(repoPath, ["for-each-ref", "--format=%(refname:short)", "refs/tags"]),
@@ -40,7 +40,7 @@ export async function listDeploymentTags(
     ]),
   ])
   const commitPositions = new Map(
-    lines(firstParentHistory).map((sha, index) => [sha, index]),
+    lines(firstParentHistory).map((sha, index) => [sha, index])
   )
   const resolved = await Promise.all(
     lines(tagNames)
@@ -56,7 +56,7 @@ export async function listDeploymentTags(
           .toString("utf8")
           .trim()
         return { name, sha }
-      }),
+      })
   )
   const byCommit = new Map<string, DeploymentTag[]>()
 
@@ -107,7 +107,10 @@ export function parseNameStatus(output: Buffer): NameStatusChange[] {
       const previousPath = fields[index++]
       const path = fields[index++]
       if (!previousPath || !path) {
-        throw new AppError("INTERNAL_ERROR", "Salida Git de renombrado incompleta")
+        throw new AppError(
+          "INTERNAL_ERROR",
+          "Salida Git de renombrado incompleta"
+        )
       }
       changes.push({ status: "R", path, previousPath })
       continue
@@ -128,15 +131,17 @@ export function parseNameStatus(output: Buffer): NameStatusChange[] {
 export async function generateInitialRcc(
   repoPath: string,
   toTag: string,
-  options: RccEngineOptions,
+  options: RccEngineOptions
 ): Promise<RccResult> {
   const catalog = await listDeploymentTags(repoPath, options)
-  const ambiguity = catalog.ambiguities.find((item) => item.tags.includes(toTag))
+  const ambiguity = catalog.ambiguities.find((item) =>
+    item.tags.includes(toTag)
+  )
 
   if (ambiguity) {
     throw new AppError(
       "CONFLICT",
-      `Tags de despliegue ambiguos para ${ambiguity.sha}: ${ambiguity.tags.join(", ")}`,
+      `Tags de despliegue ambiguos para ${ambiguity.sha}: ${ambiguity.tags.join(", ")}`
     )
   }
 
@@ -145,7 +150,9 @@ export async function generateInitialRcc(
     throw new AppError("NOT_FOUND", `Tag de despliegue no válido: ${toTag}`)
   }
 
-  const paths = (await git(repoPath, ["ls-tree", "-r", "-z", "--name-only", selected.sha]))
+  const paths = (
+    await git(repoPath, ["ls-tree", "-r", "-z", "--name-only", selected.sha])
+  )
     .toString("utf8")
     .split("\0")
     .filter(Boolean)
@@ -169,7 +176,7 @@ interface ChangeEvent {
 
 async function diff(repoPath: string, fromSha: string, toSha: string) {
   return parseNameStatus(
-    await git(repoPath, ["diff", "--name-status", "-z", "-M", fromSha, toSha]),
+    await git(repoPath, ["diff", "--name-status", "-z", "-M", fromSha, toSha])
   )
 }
 
@@ -177,26 +184,32 @@ export async function generateIncrementalRcc(
   repoPath: string,
   fromTag: string,
   toTag: string,
-  options: RccEngineOptions,
+  options: RccEngineOptions
 ): Promise<RccResult> {
   const catalog = await listDeploymentTags(repoPath, options)
   const selectedAmbiguity = catalog.ambiguities.find(
-    (item) => item.tags.includes(fromTag) || item.tags.includes(toTag),
+    (item) => item.tags.includes(fromTag) || item.tags.includes(toTag)
   )
   if (selectedAmbiguity) {
     throw new AppError(
       "CONFLICT",
-      `Tags de despliegue ambiguos para ${selectedAmbiguity.sha}: ${selectedAmbiguity.tags.join(", ")}`,
+      `Tags de despliegue ambiguos para ${selectedAmbiguity.sha}: ${selectedAmbiguity.tags.join(", ")}`
     )
   }
 
   const fromIndex = catalog.tags.findIndex((tag) => tag.name === fromTag)
   const toIndex = catalog.tags.findIndex((tag) => tag.name === toTag)
   if (fromIndex < 0 || toIndex < 0) {
-    throw new AppError("NOT_FOUND", "Uno o ambos tags están fuera del historial válido")
+    throw new AppError(
+      "NOT_FOUND",
+      "Uno o ambos tags están fuera del historial válido"
+    )
   }
   if (fromIndex >= toIndex) {
-    throw new AppError("CONFLICT", "El rango está invertido o no avanza en el historial")
+    throw new AppError(
+      "CONFLICT",
+      "El rango está invertido o no avanza en el historial"
+    )
   }
 
   const from = catalog.tags[fromIndex]!
@@ -207,19 +220,23 @@ export async function generateIncrementalRcc(
       "--first-parent",
       "--reverse",
       `refs/heads/${options.integrationBranch}`,
-    ]),
+    ])
   )
   const positions = new Map(history.map((sha, index) => [sha, index]))
   const fromPosition = positions.get(from.sha)!
   const toPosition = positions.get(to.sha)!
   const ambiguityInRange = catalog.ambiguities.find((item) => {
     const position = positions.get(item.sha)
-    return position !== undefined && position > fromPosition && position <= toPosition
+    return (
+      position !== undefined &&
+      position > fromPosition &&
+      position <= toPosition
+    )
   })
   if (ambiguityInRange) {
     throw new AppError(
       "CONFLICT",
-      `Tags de despliegue ambiguos para ${ambiguityInRange.sha}: ${ambiguityInRange.tags.join(", ")}`,
+      `Tags de despliegue ambiguos para ${ambiguityInRange.sha}: ${ambiguityInRange.tags.join(", ")}`
     )
   }
 
@@ -232,7 +249,8 @@ export async function generateIncrementalRcc(
     for (const change of await diff(repoPath, previous.sha, deployment.sha)) {
       const event = { tag: deployment.name, ordinal: ordinal++ }
       if (change.status === "R") {
-        const aliases = aliasesByPath.get(change.previousPath!) ?? new Set<string>()
+        const aliases =
+          aliasesByPath.get(change.previousPath!) ?? new Set<string>()
         aliases.add(change.previousPath!)
         aliases.add(change.path)
         aliasesByPath.delete(change.previousPath!)
@@ -257,7 +275,7 @@ export async function generateIncrementalRcc(
     if (!event) {
       throw new AppError(
         "INTERNAL_ERROR",
-        `No se encontró el despliegue del último cambio para ${change.path}`,
+        `No se encontró el despliegue del último cambio para ${change.path}`
       )
     }
     consolidated.push({

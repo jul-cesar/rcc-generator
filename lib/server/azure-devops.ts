@@ -5,11 +5,7 @@ import type {
 } from "../rcc/types"
 import { getServerConfig } from "./config"
 import { AppError } from "./errors"
-import {
-  runProcess,
-  type ProcessOptions,
-  type ProcessResult,
-} from "./process"
+import { runProcess, type ProcessOptions, type ProcessResult } from "./process"
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -17,7 +13,7 @@ const UUID_PATTERN =
 type ProcessRunner = (
   command: string,
   args: readonly string[],
-  options?: ProcessOptions,
+  options?: ProcessOptions
 ) => Promise<ProcessResult>
 
 interface AzureDevOpsDependencies {
@@ -39,7 +35,10 @@ interface AzureRepository {
 
 export function assertAzureId(value: string): void {
   if (!UUID_PATTERN.test(value)) {
-    throw new AppError("INVALID_INPUT", "Identificador de Azure DevOps inválido")
+    throw new AppError(
+      "INVALID_INPUT",
+      "Identificador de Azure DevOps inválido"
+    )
   }
 }
 
@@ -58,9 +57,15 @@ function classifyAzureError(error: unknown): AppError {
     return new AppError("AUTH_REJECTED", "Azure DevOps rechazó el PAT")
   }
   if (/unable to connect|enotfound|econn|timed? out|conexión/.test(message)) {
-    return new AppError("CONNECTION_FAILED", "No fue posible conectar con Azure DevOps")
+    return new AppError(
+      "CONNECTION_FAILED",
+      "No fue posible conectar con Azure DevOps"
+    )
   }
-  return new AppError("PROCESS_FAILED", "Azure CLI no pudo completar la operación")
+  return new AppError(
+    "PROCESS_FAILED",
+    "Azure CLI no pudo completar la operación"
+  )
 }
 
 function parseJson<T>(result: ProcessResult): T {
@@ -74,7 +79,7 @@ function parseJson<T>(result: ProcessResult): T {
 }
 
 export function createAzureDevOpsClient(
-  dependencies: AzureDevOpsDependencies = {},
+  dependencies: AzureDevOpsDependencies = {}
 ) {
   const runner = dependencies.runner ?? runProcess
   const env = dependencies.env ?? process.env
@@ -88,7 +93,7 @@ export function createAzureDevOpsClient(
         {
           env: { ...process.env, ...env, AZURE_DEVOPS_EXT_PAT: config.pat },
           secrets: [config.pat],
-        },
+        }
       )
       return parseJson<T>(result)
     } catch (error) {
@@ -106,7 +111,7 @@ export function createAzureDevOpsClient(
   }
 
   async function authorizedRepositories(
-    projectId: string,
+    projectId: string
   ): Promise<AuthorizedRepository[]> {
     assertAzureId(projectId)
     const repositories = await az<AzureRepository[]>([
@@ -124,7 +129,7 @@ export function createAzureDevOpsClient(
   }
 
   async function listRepositories(
-    projectId: string,
+    projectId: string
   ): Promise<RepositorySummary[]> {
     return (await authorizedRepositories(projectId)).map(({ id, name }) => ({
       id,
@@ -133,16 +138,19 @@ export function createAzureDevOpsClient(
   }
 
   async function resolveAuthorizedRepository(
-    repositoryId: string,
+    repositoryId: string
   ): Promise<AuthorizedRepository> {
     assertAzureId(repositoryId)
     for (const project of await listProjects()) {
       const repository = (await authorizedRepositories(project.id)).find(
-        (candidate) => candidate.id === repositoryId,
+        (candidate) => candidate.id === repositoryId
       )
       if (repository) return repository
     }
-    throw new AppError("NOT_FOUND", "Repositorio no disponible para este usuario")
+    throw new AppError(
+      "NOT_FOUND",
+      "Repositorio no disponible para este usuario"
+    )
   }
 
   return { listProjects, listRepositories, resolveAuthorizedRepository }

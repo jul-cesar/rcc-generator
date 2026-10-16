@@ -9,7 +9,11 @@ import { createGitStore } from "../lib/server/git-store"
 import type { ProcessOptions, ProcessResult } from "../lib/server/process"
 
 const roots: string[] = []
-afterEach(() => roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })))
+afterEach(() =>
+  roots
+    .splice(0)
+    .forEach((root) => rmSync(root, { recursive: true, force: true }))
+)
 
 const env = { AZURE_DEVOPS_EXT_PAT: "secret-pat" }
 const repository: AuthorizedRepository = {
@@ -22,7 +26,7 @@ const repository: AuthorizedRepository = {
 type Runner = (
   command: string,
   args: readonly string[],
-  options?: ProcessOptions,
+  options?: ProcessOptions
 ) => Promise<ProcessResult>
 
 function root() {
@@ -56,7 +60,10 @@ test("clones bare without putting credentials in arguments or remote URL", async
   assert.equal(calls[0]?.args.join(" ").includes("secret-pat"), false)
   assert.equal(calls[0]?.args.join(" ").includes("@dev.azure.com"), false)
   assert.equal(calls[0]?.options?.env?.GIT_CONFIG_KEY_0, "http.extraHeader")
-  assert.match(calls[0]?.options?.env?.GIT_CONFIG_VALUE_0 ?? "", /^Authorization: Basic /)
+  assert.match(
+    calls[0]?.options?.env?.GIT_CONFIG_VALUE_0 ?? "",
+    /^Authorization: Basic /
+  )
 })
 
 test("shares one update between concurrent operations for one repository", async () => {

@@ -23,22 +23,33 @@ test("validates UUIDs and RCC request modes", () => {
       fromTag: "develop_v1",
       toTag: "develop_v2",
     }),
-    { mode: "incremental", fromTag: "develop_v1", toTag: "develop_v2" },
+    { mode: "incremental", fromTag: "develop_v1", toTag: "develop_v2" }
   )
 
   assert.throws(() => assertUuid("../repo"), { code: "INVALID_INPUT" })
   assert.throws(
-    () => parseRccRequest({ mode: "initial", fromTag: "develop_v0", toTag: "develop_v1" }),
-    { code: "INVALID_INPUT" },
+    () =>
+      parseRccRequest({
+        mode: "initial",
+        fromTag: "develop_v0",
+        toTag: "develop_v1",
+      }),
+    { code: "INVALID_INPUT" }
   )
   assert.throws(
     () => parseRccRequest({ mode: "incremental", toTag: "develop_v2" }),
-    { code: "INVALID_INPUT" },
+    { code: "INVALID_INPUT" }
   )
 })
 
 test("rejects malformed tags before they can reach Git", () => {
-  for (const toTag of ["", "../develop_v1", "develop v1", "develop_v1\0evil", "a".repeat(256)]) {
+  for (const toTag of [
+    "",
+    "../develop_v1",
+    "develop v1",
+    "develop_v1\0evil",
+    "a".repeat(256),
+  ]) {
     assert.throws(() => parseRccRequest({ mode: "initial", toTag }), {
       code: "INVALID_INPUT",
     })
@@ -53,7 +64,7 @@ test("accepts matching loopback origins", () => {
   ]) {
     const origin = new URL(url).origin
     assert.doesNotThrow(() =>
-      assertLocalOrigin(new Request(url, { headers: { origin } })),
+      assertLocalOrigin(new Request(url, { headers: { origin } }))
     )
   }
 })
@@ -61,25 +72,25 @@ test("accepts matching loopback origins", () => {
 test("rejects absent, foreign, and host-mismatched origins", () => {
   assert.throws(
     () => assertLocalOrigin(new Request("http://127.0.0.1:3000/api/rcc")),
-    { code: "FORBIDDEN" },
+    { code: "FORBIDDEN" }
   )
   assert.throws(
     () =>
       assertLocalOrigin(
         new Request("http://127.0.0.1:3000/api/rcc", {
           headers: { origin: "https://evil.example" },
-        }),
+        })
       ),
-    { code: "FORBIDDEN" },
+    { code: "FORBIDDEN" }
   )
   assert.throws(
     () =>
       assertLocalOrigin(
         new Request("http://127.0.0.1:3000/api/rcc", {
           headers: { origin: "http://localhost:3000" },
-        }),
+        })
       ),
-    { code: "FORBIDDEN" },
+    { code: "FORBIDDEN" }
   )
 })
 

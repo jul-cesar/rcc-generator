@@ -4,11 +4,7 @@ import path from "node:path"
 import type { AuthorizedRepository } from "../rcc/types"
 import { getServerConfig } from "./config"
 import { AppError } from "./errors"
-import {
-  runProcess,
-  type ProcessOptions,
-  type ProcessResult,
-} from "./process"
+import { runProcess, type ProcessOptions, type ProcessResult } from "./process"
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -16,7 +12,7 @@ const UUID_PATTERN =
 type ProcessRunner = (
   command: string,
   args: readonly string[],
-  options?: ProcessOptions,
+  options?: ProcessOptions
 ) => Promise<ProcessResult>
 
 interface GitStoreDependencies {
@@ -37,7 +33,10 @@ function safeRemoteUrl(value: string): string {
     url.hostname !== "dev.azure.com" ||
     !url.pathname.toLowerCase().startsWith("/alianzaapps/")
   ) {
-    throw new AppError("INVALID_INPUT", "El repositorio no pertenece a la organización autorizada")
+    throw new AppError(
+      "INVALID_INPUT",
+      "El repositorio no pertenece a la organización autorizada"
+    )
   }
   url.username = ""
   url.password = ""
@@ -47,12 +46,18 @@ function safeRemoteUrl(value: string): string {
 export function createGitStore(dependencies: GitStoreDependencies = {}) {
   const runner = dependencies.runner ?? runProcess
   const env = dependencies.env ?? process.env
-  const root = dependencies.root ?? path.join(process.cwd(), ".data", "repositories")
+  const root =
+    dependencies.root ?? path.join(process.cwd(), ".data", "repositories")
   const updates = new Map<string, Promise<string>>()
 
-  async function updateRepository(repository: AuthorizedRepository): Promise<string> {
+  async function updateRepository(
+    repository: AuthorizedRepository
+  ): Promise<string> {
     if (!UUID_PATTERN.test(repository.id)) {
-      throw new AppError("INVALID_INPUT", "Identificador de repositorio inválido")
+      throw new AppError(
+        "INVALID_INPUT",
+        "Identificador de repositorio inválido"
+      )
     }
     const config = getServerConfig(env)
     const header = `Authorization: Basic ${Buffer.from(`:${config.pat}`).toString("base64")}`
@@ -73,7 +78,7 @@ export function createGitStore(dependencies: GitStoreDependencies = {}) {
       await runner(
         "git",
         ["clone", "--bare", safeRemoteUrl(repository.remoteUrl), repoPath],
-        processOptions,
+        processOptions
       )
     } else {
       await runner(
@@ -87,7 +92,7 @@ export function createGitStore(dependencies: GitStoreDependencies = {}) {
           "+refs/heads/*:refs/heads/*",
           "+refs/tags/*:refs/tags/*",
         ],
-        processOptions,
+        processOptions
       )
     }
     return repoPath
@@ -106,7 +111,7 @@ export function createGitStore(dependencies: GitStoreDependencies = {}) {
 
   async function withUpdatedRepository<T>(
     repository: AuthorizedRepository,
-    operation: (repoPath: string) => Promise<T>,
+    operation: (repoPath: string) => Promise<T>
   ): Promise<T> {
     return operation(await sharedUpdate(repository))
   }
@@ -118,7 +123,7 @@ const defaultStore = createGitStore()
 
 export function withUpdatedRepository<T>(
   repository: AuthorizedRepository,
-  operation: (repoPath: string) => Promise<T>,
+  operation: (repoPath: string) => Promise<T>
 ): Promise<T> {
   return defaultStore.withUpdatedRepository(repository, operation)
 }

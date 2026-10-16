@@ -30,7 +30,9 @@ test("lists every versioned file at the selected tag as added", async () => {
   assert.equal(result.mode, "initial")
   assert.deepEqual(result.to, { tag: "develop_v1", sha })
   assert.deepEqual(
-    result.rows.map((row) => ({ ...row })).sort((a, b) => a.path.localeCompare(b.path)),
+    result.rows
+      .map((row) => ({ ...row }))
+      .sort((a, b) => a.path.localeCompare(b.path)),
     [
       {
         path: "src/con espacio.txt",
@@ -42,7 +44,7 @@ test("lists every versioned file at the selected tag as added", async () => {
         action: "A",
         lastChangedTag: "develop_v1",
       },
-    ].sort((a, b) => a.path.localeCompare(b.path)),
+    ].sort((a, b) => a.path.localeCompare(b.path))
   )
   assert.deepEqual(result.warnings, [])
 })
@@ -60,6 +62,6 @@ test("rejects an ambiguous deployment tag", async () => {
       tagPrefix: "develop_v",
       integrationBranch: "develop",
     }),
-    /ambiguos/i,
+    /ambiguos/i
   )
 })

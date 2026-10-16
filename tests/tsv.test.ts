@@ -24,7 +24,7 @@ test("formats RCC rows as safe tab-separated text", () => {
       "Ruta\tRuta anterior\tAcción\tÚltimo tag",
       "src/archivo ñ.ts\t\tA\tdevelop_v1",
       "src/nuevo archivo.ts\tsrc/anterior archivo.ts\tM\tdevelop_v2",
-    ].join("\n"),
+    ].join("\n")
   )
 })
 
@@ -34,7 +34,7 @@ test("builds safe initial and incremental TXT filenames", () => {
       mode: "initial",
       toTag: "develop_v1.2",
     }),
-    "rcc-Mi-Repo-API-develop_v1.2.txt",
+    "rcc-Mi-Repo-API-develop_v1.2.txt"
   )
   assert.equal(
     rccFilename("Mi Repo / API", {
@@ -42,6 +42,6 @@ test("builds safe initial and incremental TXT filenames", () => {
       fromTag: "develop_v1.2",
       toTag: "develop_v1.3",
     }),
-    "rcc-Mi-Repo-API-develop_v1.2-develop_v1.3.txt",
+    "rcc-Mi-Repo-API-develop_v1.2-develop_v1.3.txt"
   )
 })

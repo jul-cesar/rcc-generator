@@ -22,7 +22,11 @@ interface RccResultsProps {
   repositoryName: string
 }
 
-export function RccResults({ result, request, repositoryName }: RccResultsProps) {
+export function RccResults({
+  result,
+  request,
+  repositoryName,
+}: RccResultsProps) {
   const [copied, setCopied] = useState(false)
   const content = rowsToTsv(result.rows)
 
@@ -34,7 +38,7 @@ export function RccResults({ result, request, repositoryName }: RccResultsProps)
 
   function downloadRows() {
     const url = URL.createObjectURL(
-      new Blob([content], { type: "text/tab-separated-values;charset=utf-8" }),
+      new Blob([content], { type: "text/tab-separated-values;charset=utf-8" })
     )
     const anchor = document.createElement("a")
     anchor.href = url
@@ -44,7 +48,10 @@ export function RccResults({ result, request, repositoryName }: RccResultsProps)
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card shadow-sm" aria-labelledby="results-title">
+    <section
+      className="overflow-hidden rounded-2xl border bg-card shadow-sm"
+      aria-labelledby="results-title"
+    >
       <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
           <div className="flex items-center gap-2">
@@ -54,12 +61,18 @@ export function RccResults({ result, request, repositoryName }: RccResultsProps)
             </h2>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {result.rows.length} {result.rows.length === 1 ? "archivo" : "archivos"} con diferencia neta
+            {result.rows.length}{" "}
+            {result.rows.length === 1 ? "archivo" : "archivos"} con diferencia
+            neta
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => void copyRows()}>
-            {copied ? <Check data-icon="inline-start" /> : <Clipboard data-icon="inline-start" />}
+            {copied ? (
+              <Check data-icon="inline-start" />
+            ) : (
+              <Clipboard data-icon="inline-start" />
+            )}
             {copied ? "Copiado" : "Copiar para Excel"}
           </Button>
           <Button variant="secondary" onClick={downloadRows}>
@@ -101,7 +114,9 @@ export function RccResults({ result, request, repositoryName }: RccResultsProps)
             <TableBody>
               {result.rows.map((row) => (
                 <TableRow key={`${row.action}:${row.path}`}>
-                  <TableCell className="font-mono text-xs">{row.path}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {row.path}
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {row.previousPath ?? "—"}
                   </TableCell>
@@ -110,7 +125,9 @@ export function RccResults({ result, request, repositoryName }: RccResultsProps)
                       {row.action}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{row.lastChangedTag}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {row.lastChangedTag}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

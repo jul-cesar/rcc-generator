@@ -33,7 +33,9 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
     error?: { message?: string }
   }
   if (!response.ok) {
-    throw new Error(body.error?.message || "No fue posible completar la solicitud")
+    throw new Error(
+      body.error?.message || "No fue posible completar la solicitud"
+    )
   }
   return body
 }
@@ -60,7 +62,8 @@ export function RccWorkbench() {
         if (active) setProjects(response.projects)
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : "Error desconocido")
+        if (active)
+          setError(cause instanceof Error ? cause.message : "Error desconocido")
       })
       .finally(() => {
         if (active) setLoading(null)
@@ -88,11 +91,15 @@ export function RccWorkbench() {
     setLoading("repositories")
     try {
       const response = await requestJson<RepositoriesResponse>(
-        `/api/projects/${encodeURIComponent(value)}/repositories`,
+        `/api/projects/${encodeURIComponent(value)}/repositories`
       )
       setRepositories(response.repositories)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No fue posible cargar repositorios")
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "No fue posible cargar repositorios"
+      )
     } finally {
       setLoading(null)
     }
@@ -110,12 +117,14 @@ export function RccWorkbench() {
     setLoading("tags")
     try {
       const response = await requestJson<TagsResponse>(
-        `/api/repositories/${encodeURIComponent(value)}/tags`,
+        `/api/repositories/${encodeURIComponent(value)}/tags`
       )
       setTags(response.tags)
       setWarnings(response.warnings)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No fue posible cargar tags")
+      setError(
+        cause instanceof Error ? cause.message : "No fue posible cargar tags"
+      )
     } finally {
       setLoading(null)
     }
@@ -132,9 +141,7 @@ export function RccWorkbench() {
 
   async function generateRcc() {
     const request: RccRequest =
-      mode === "initial"
-        ? { mode, toTag }
-        : { mode, fromTag, toTag }
+      mode === "initial" ? { mode, toTag } : { mode, fromTag, toTag }
     setLoading("rcc")
     setError("")
     setResult(null)
@@ -145,12 +152,14 @@ export function RccWorkbench() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(request),
-        },
+        }
       )
       setResult(response)
       setLastRequest(request)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No fue posible generar el RCC")
+      setError(
+        cause instanceof Error ? cause.message : "No fue posible generar el RCC"
+      )
     } finally {
       setLoading(null)
     }
@@ -172,7 +181,8 @@ export function RccWorkbench() {
             Generador de RCC
           </h1>
           <p className="mt-3 text-pretty text-muted-foreground sm:text-lg">
-            Consolida cambios entre entregas, identifica el último tag y exporta el resultado listo para Excel.
+            Consolida cambios entre entregas, identifica el último tag y exporta
+            el resultado listo para Excel.
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

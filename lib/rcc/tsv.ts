@@ -20,17 +20,18 @@ export function rowsToTsv(rows: readonly RccRow[]): string {
     ...rows.map((row) =>
       [row.path, row.previousPath ?? "", row.action, row.lastChangedTag]
         .map(safeCell)
-        .join("\t"),
+        .join("\t")
     ),
   ].join("\n")
 }
 
 export function rccFilename(
   repositoryName: string,
-  request: RccRequest,
+  request: RccRequest
 ): string {
   const parts = [safeFilenamePart(repositoryName)]
-  if (request.mode === "incremental") parts.push(safeFilenamePart(request.fromTag))
+  if (request.mode === "incremental")
+    parts.push(safeFilenamePart(request.fromTag))
   parts.push(safeFilenamePart(request.toTag))
   return `rcc-${parts.join("-")}.txt`
 }

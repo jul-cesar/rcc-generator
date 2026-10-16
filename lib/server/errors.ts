@@ -13,14 +13,17 @@ export class AppError extends Error {
   constructor(
     public readonly code: AppErrorCode,
     message: string,
-    options?: ErrorOptions,
+    options?: ErrorOptions
   ) {
     super(message, options)
     this.name = "AppError"
   }
 }
 
-export function redactSecrets(value: string, secrets: readonly string[]): string {
+export function redactSecrets(
+  value: string,
+  secrets: readonly string[]
+): string {
   return [...secrets]
     .filter(Boolean)
     .sort((left, right) => right.length - left.length)
@@ -34,7 +37,7 @@ export function toSafeError(error: unknown, secrets: readonly string[] = []) {
       : new AppError(
           "INTERNAL_ERROR",
           "Error interno",
-          error instanceof Error ? { cause: error } : undefined,
+          error instanceof Error ? { cause: error } : undefined
         )
 
   return {
