@@ -118,6 +118,55 @@ test("classifies missing, rejected, forbidden, and network authentication failur
   }
 })
 
+test("classifies the az login prompt as missing credentials", async () => {
+  const runner: Runner = async () => {
+    throw new AppError(
+      "PROCESS_FAILED",
+      "Before you can run Azure DevOps commands, you need to run the login command(az login if using AAD/MSA identity else az devops login if using PAT token) to setup credentials."
+    )
+  }
+
+  await assert.rejects(
+    createAzureDevOpsClient({ runner, env }).listProjects(),
+    (error: unknown) =>
+      error instanceof AppError &&
+      error.code === "AUTH_MISSING" &&
+      error.message.includes("AZURE_DEVOPS_EXT_PAT")
+  )
+})
+
+test("classifies a missing az executable as a diagnosable process failure", async () => {
+  const runner: Runner = async () => {
+    throw new AppError("PROCESS_FAILED", "spawn az ENOENT")
+  }
+
+  await assert.rejects(
+    createAzureDevOpsClient({ runner, env }).listProjects(),
+    (error: unknown) =>
+      error instanceof AppError &&
+      error.code === "PROCESS_FAILED" &&
+      error.message.includes("No se encontró la CLI de Azure") &&
+      /instal/i.test(error.message)
+  )
+})
+
+test("classifies the Windows cmd 'command not recognized' failure for a missing az", async () => {
+  const runner: Runner = async () => {
+    throw new AppError(
+      "PROCESS_FAILED",
+      '"az" no se reconoce como un comando interno o externo, programa o archivo por lotes ejecutable.'
+    )
+  }
+
+  await assert.rejects(
+    createAzureDevOpsClient({ runner, env }).listProjects(),
+    (error: unknown) =>
+      error instanceof AppError &&
+      error.code === "PROCESS_FAILED" &&
+      error.message.includes("No se encontró la CLI de Azure")
+  )
+})
+
 test("rejects a repository outside accessible projects", async () => {
   const runner: Runner = async (_command, args) =>
     args[0] === "devops"

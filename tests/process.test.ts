@@ -5,6 +5,28 @@ import { getServerConfig } from "../lib/server/config"
 import { AppError, redactSecrets, toSafeError } from "../lib/server/errors"
 import { runProcess } from "../lib/server/process"
 
+test(
+  "resolves a Windows shell builtin through the cmd.exe fallback",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const result = await runProcess("echo", ["ok"])
+
+    assert.equal(result.stdout.toString().trim(), "ok")
+    assert.equal(result.exitCode, 0)
+  }
+)
+
+test(
+  "resolves a POSIX builtin path directly",
+  { skip: process.platform === "win32" },
+  async () => {
+    const result = await runProcess("/bin/echo", ["ok"])
+
+    assert.equal(result.stdout.toString().trim(), "ok")
+    assert.equal(result.exitCode, 0)
+  }
+)
+
 test("passes shell metacharacters as a literal argument", async () => {
   const value = "safe; echo compromised"
   const result = await runProcess(process.execPath, [

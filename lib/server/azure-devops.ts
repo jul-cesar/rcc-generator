@@ -62,6 +62,18 @@ function classifyAzureError(error: unknown): AppError {
       "No fue posible conectar con Azure DevOps"
     )
   }
+  if (/need to run the login command|az devops login/.test(message)) {
+    return new AppError(
+      "AUTH_MISSING",
+      "Azure CLI no recibió credenciales: verificá AZURE_DEVOPS_EXT_PAT"
+    )
+  }
+  if (/spawn az enoent|az"? (no se reconoce|is not recognized)/.test(message)) {
+    return new AppError(
+      "PROCESS_FAILED",
+      "No se encontró la CLI de Azure (az): instalala o revisá el PATH"
+    )
+  }
   return new AppError(
     "PROCESS_FAILED",
     "Azure CLI no pudo completar la operación"
