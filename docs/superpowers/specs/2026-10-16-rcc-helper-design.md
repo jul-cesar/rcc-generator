@@ -130,9 +130,7 @@ Devuelve proyectos accesibles:
 
 ```json
 {
-  "projects": [
-    { "id": "uuid", "name": "Proyecto" }
-  ]
+  "projects": [{ "id": "uuid", "name": "Proyecto" }]
 }
 ```
 
@@ -142,9 +140,7 @@ Devuelve repositorios autorizados del proyecto:
 
 ```json
 {
-  "repositories": [
-    { "id": "uuid", "name": "Repositorio" }
-  ]
+  "repositories": [{ "id": "uuid", "name": "Repositorio" }]
 }
 ```
 
