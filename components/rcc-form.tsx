@@ -1,10 +1,21 @@
 "use client"
 
+import * as React from "react"
 import type {
   DeploymentTag,
   ProjectSummary,
   RepositorySummary,
 } from "@/lib/rcc/types"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxControl,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  createComboboxItems,
+} from "@/components/ui/combobox"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -86,6 +97,56 @@ function SelectField({
   )
 }
 
+type FieldOption = FieldProps["options"][number]
+
+function ComboboxField({
+  id,
+  label,
+  value,
+  placeholder,
+  options,
+  disabled,
+  onChange,
+}: FieldProps) {
+  const items = React.useMemo(
+    () =>
+      createComboboxItems(options, {
+        getValue: (option) => option.value,
+        getLabel: (option) => option.label,
+      }),
+    [options]
+  )
+
+  return (
+    <div className="grid gap-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      <Combobox
+        items={items}
+        autoHighlight
+        value={value || null}
+        onValueChange={(nextValue) => nextValue && onChange(nextValue)}
+        disabled={disabled}
+      >
+        <ComboboxControl>
+          <ComboboxInput id={id} placeholder={placeholder} />
+        </ComboboxControl>
+        <ComboboxContent>
+          <ComboboxEmpty />
+          <ComboboxList>
+            {(option: FieldOption) => (
+              <ComboboxItem key={option.value} value={option.value}>
+                {option.label}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
+  )
+}
+
 export function RccForm(props: RccFormProps) {
   const busy = props.loading !== null
   const canSubmit =
@@ -117,7 +178,7 @@ export function RccForm(props: RccFormProps) {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <SelectField
+        <ComboboxField
           id="project"
           label="Proyecto"
           value={props.projectId}
@@ -133,7 +194,7 @@ export function RccForm(props: RccFormProps) {
           disabled={busy || props.projects.length === 0}
           onChange={props.onProjectChange}
         />
-        <SelectField
+        <ComboboxField
           id="repository"
           label="Repositorio"
           value={props.repositoryId}
@@ -162,7 +223,7 @@ export function RccForm(props: RccFormProps) {
           onChange={(value) => props.onModeChange(value as RccMode)}
         />
         {props.mode === "incremental" && (
-          <SelectField
+          <ComboboxField
             id="from-tag"
             label="Entrega anterior"
             value={props.fromTag}
@@ -175,7 +236,7 @@ export function RccForm(props: RccFormProps) {
             onChange={props.onFromTagChange}
           />
         )}
-        <SelectField
+        <ComboboxField
           id="to-tag"
           label={props.mode === "initial" ? "Primera entrega" : "Entrega final"}
           value={props.toTag}
