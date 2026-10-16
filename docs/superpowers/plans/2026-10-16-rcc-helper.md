@@ -55,6 +55,7 @@
 ### Task 1: Secure Runtime Foundation
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `.gitignore`
@@ -66,6 +67,7 @@
 - Test: `tests/process.test.ts`
 
 **Interfaces:**
+
 - Produces: `RccAction`, `RccRow`, `DeploymentTag`, `RccResult`, `ProjectSummary`, `RepositorySummary`, and `AuthorizedRepository`.
 - Produces: `getServerConfig(): ServerConfig` with fixed `organization`, configurable `tagPrefix` and `integrationBranch`, and required `pat`.
 - Produces: `runProcess(command, args, options?): Promise<ProcessResult>` where `ProcessResult` contains `stdout: Buffer`, `stderr: string`, and `exitCode: number`.
@@ -109,12 +111,14 @@ git commit -m "feat: add secure server runtime"
 ### Task 2: Deployment Tag Model and Initial RCC
 
 **Files:**
+
 - Create: `lib/server/rcc-engine.ts`
 - Create: `tests/helpers/git-fixture.ts`
 - Create: `tests/rcc-initial.test.ts`
 - Create: `tests/rcc-tags.test.ts`
 
 **Interfaces:**
+
 - Consumes: `runProcess`, `DeploymentTag`, and `RccResult` from Task 1.
 - Produces: `listDeploymentTags(repoPath, options): Promise<DeploymentTagCatalog>`.
 - Produces: `generateInitialRcc(repoPath, toTag, options): Promise<RccResult>`.
@@ -158,10 +162,12 @@ git commit -m "feat: generate initial RCC data"
 ### Task 3: Incremental RCC Consolidation
 
 **Files:**
+
 - Modify: `lib/server/rcc-engine.ts`
 - Create: `tests/rcc-incremental.test.ts`
 
 **Interfaces:**
+
 - Consumes: deployment catalog from Task 2.
 - Produces: `generateIncrementalRcc(repoPath, fromTag, toTag, options): Promise<RccResult>`.
 - Produces rows ordered by their final chronological change event, preserving Git order within one deployment.
@@ -208,12 +214,14 @@ git commit -m "feat: consolidate incremental RCC changes"
 ### Task 4: Azure Discovery and Bare Repository Store
 
 **Files:**
+
 - Create: `lib/server/azure-devops.ts`
 - Create: `lib/server/git-store.ts`
 - Create: `tests/azure-devops.test.ts`
 - Create: `tests/git-store.test.ts`
 
 **Interfaces:**
+
 - Consumes: `runProcess`, `getServerConfig`, `ProjectSummary`, and `AuthorizedRepository`.
 - Produces: `listProjects(): Promise<ProjectSummary[]>`.
 - Produces: `listRepositories(projectId): Promise<RepositorySummary[]>`.
@@ -262,6 +270,7 @@ git commit -m "feat: integrate Azure repositories"
 ### Task 5: HTTP API Boundary
 
 **Files:**
+
 - Create: `lib/server/http.ts`
 - Create: `app/api/projects/route.ts`
 - Create: `app/api/projects/[projectId]/repositories/route.ts`
@@ -270,6 +279,7 @@ git commit -m "feat: integrate Azure repositories"
 - Create: `tests/http.test.ts`
 
 **Interfaces:**
+
 - Consumes: Azure discovery, `withUpdatedRepository`, RCC engine functions, shared response types.
 - Produces: the four API routes defined in the spec.
 - Produces: `assertUuid`, `parseRccRequest`, `assertLocalOrigin`, and `errorResponse`.
@@ -323,6 +333,7 @@ git commit -m "feat: expose RCC API routes"
 ### Task 6: RCC Workbench and TSV Export
 
 **Files:**
+
 - Modify: `app/page.tsx`
 - Modify: `app/layout.tsx`
 - Create: `components/rcc-workbench.tsx`
@@ -335,6 +346,7 @@ git commit -m "feat: expose RCC API routes"
 - Test: `tests/tsv.test.ts`
 
 **Interfaces:**
+
 - Consumes: public API responses and shared RCC types.
 - Produces: `rowsToTsv(rows): string` and `rccFilename(repositoryName, request): string`.
 - Produces: one client workbench with project, repository, mode, tags, loading, error, empty, copy, and download states.
@@ -387,10 +399,12 @@ git commit -m "feat: add RCC generation workbench"
 ### Task 7: Operating Guide and End-to-End Verification
 
 **Files:**
+
 - Modify: `README.md`
 - Create: `tests/api-smoke.test.ts`
 
 **Interfaces:**
+
 - Consumes: completed API, UI, and scripts.
 - Produces: installation and operation instructions plus a credential-free smoke test.
 
