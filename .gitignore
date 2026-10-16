@@ -10,6 +10,7 @@
 
 # testing
 /coverage
+/.tmp/
 
 # next.js
 /.next/
@@ -28,8 +29,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
+
+# local RCC data and analysis
+/.data/
+/graphify-out/
 
 # vercel
 .vercel
