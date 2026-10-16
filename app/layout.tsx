@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
+import { RccHeader } from "@/components/rcc-header"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 
@@ -25,7 +26,13 @@ export default function RootLayout({
       className={cn("font-sans antialiased", inter.variable, fontMono.variable)}
     >
       <body>
-        <ThemeProvider defaultTheme="light">{children}</ThemeProvider>
+        {/* RccHeader must sit INSIDE ThemeProvider: the toggle resolves the
+            active mode via next-themes context (useTheme needs the provider,
+            not just client-side rendering). */}
+        <ThemeProvider defaultTheme="light">
+          <RccHeader />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

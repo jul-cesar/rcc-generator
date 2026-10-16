@@ -169,7 +169,7 @@ export function RccForm(props: RccFormProps) {
             Selecciona el repositorio y los despliegues que quieres comparar.
           </p>
         </div>
-        {busy && (
+        {busy && props.loading !== "rcc" && (
           <LoaderCircle
             className="mt-1 size-5 animate-spin text-muted-foreground"
             aria-label="Cargando"

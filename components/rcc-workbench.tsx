@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { AlertCircle, GitBranch, Info, ShieldCheck } from "lucide-react"
 
 import { RccForm, type LoadingStage, type RccMode } from "@/components/rcc-form"
+import { RccLoadingOverlay } from "@/components/rcc-loading-overlay"
 import { RccResults } from "@/components/rcc-results"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type {
@@ -169,27 +170,33 @@ export function RccWorkbench() {
     repositories.find((repository) => repository.id === repositoryId)?.name ??
     "repositorio"
 
+  // Only the RCC generation request gets the full-screen overlay; the quick
+  // cascading select loads keep their inline placeholder texts.
+  const generatingRcc = loading === "rcc"
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-12">
-      <header className="flex flex-col gap-5 rounded-3xl border  p-6 shadow-sm backdrop-blur sm:p-8 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-2xl">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+    <div
+      className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 lg:pb-12"
+      aria-busy={generatingRcc ? true : undefined}
+    >
+      {/* The app header (RccHeader) now carries the page title; this slim row
+          keeps the context badge and description without repeating it. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex max-w-2xl flex-col gap-2">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
             <GitBranch className="size-3.5" />
             Azure DevOps · develop
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Generador de RCC
-          </h1>
-          <p className="mt-3 text-pretty text-muted-foreground sm:text-lg">
+          <p className="text-pretty text-sm text-muted-foreground sm:text-base">
             Consolida cambios entre entregas, identifica el último tag y exporta
             el resultado listo para Excel.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
           <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
           El PAT permanece en este equipo
         </div>
-      </header>
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -242,6 +249,8 @@ export function RccWorkbench() {
           Los resultados aparecerán aquí después de consultar un rango.
         </section>
       )}
+
+      <RccLoadingOverlay open={generatingRcc} />
     </div>
   )
 }
