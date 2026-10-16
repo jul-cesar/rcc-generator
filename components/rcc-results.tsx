@@ -105,8 +105,8 @@ export function RccResults({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ruta</TableHead>
-                <TableHead>Ruta anterior</TableHead>
+                <TableHead className="min-w-[40ch]">Ruta</TableHead>
+                <TableHead className="min-w-[40ch]">Ruta anterior</TableHead>
                 <TableHead className="w-24">Acción</TableHead>
                 <TableHead>Último tag</TableHead>
               </TableRow>
@@ -114,10 +114,10 @@ export function RccResults({
             <TableBody>
               {result.rows.map((row) => (
                 <TableRow key={`${row.action}:${row.path}`}>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="min-w-[40ch] font-mono text-xs">
                     {row.path}
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
+                  <TableCell className="min-w-[40ch] font-mono text-xs text-muted-foreground">
                     {row.previousPath ?? "—"}
                   </TableCell>
                   <TableCell>

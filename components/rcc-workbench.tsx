@@ -176,7 +176,7 @@ export function RccWorkbench() {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 lg:pb-12"
+      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 xl:max-w-[1440px] 2xl:max-w-[1680px] lg:px-8 lg:pb-12"
       aria-busy={generatingRcc ? true : undefined}
     >
       {/* The app header (RccHeader) now carries the page title; this slim row
