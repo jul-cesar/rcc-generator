@@ -1,5 +1,12 @@
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs"
+import {
+  mkdtempSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -9,6 +16,7 @@ export interface GitFixture {
   bare: string
   write(relativePath: string, content: string): void
   remove(relativePath: string): void
+  rename(from: string, to: string): void
   commit(message: string): string
   tag(name: string, annotated?: boolean): void
   checkout(name: string, startPoint?: string): void
@@ -44,6 +52,11 @@ export function createGitFixture(): GitFixture {
     },
     remove(relativePath) {
       unlinkSync(path.join(work, relativePath))
+    },
+    rename(from, to) {
+      const destination = path.join(work, to)
+      mkdirSync(path.dirname(destination), { recursive: true })
+      renameSync(path.join(work, from), destination)
     },
     commit(message) {
       git(work, "add", "-A")
