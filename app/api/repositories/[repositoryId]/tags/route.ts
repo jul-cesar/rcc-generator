@@ -1,4 +1,7 @@
-import { resolveAuthorizedRepository } from "@/lib/server/azure-devops"
+import {
+  resolveAuthorizedRepository,
+  resolveAuthorizedRepositoryInProject,
+} from "@/lib/server/azure-devops"
 import { getServerConfig } from "@/lib/server/config"
 import { withUpdatedRepository } from "@/lib/server/git-store"
 import { assertUuid, errorResponse } from "@/lib/server/http"
@@ -8,12 +11,19 @@ interface RouteContext {
   params: Promise<{ repositoryId: string }>
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
     const { repositoryId } = await context.params
-    const repository = await resolveAuthorizedRepository(
-      assertUuid(repositoryId)
-    )
+    assertUuid(repositoryId)
+    // Optional projectId scopes the resolution to a single project (one REST
+    // request + cache); the legacy path scans all accessible projects.
+    const projectId = new URL(request.url).searchParams.get("projectId")
+    const repository = projectId
+      ? await resolveAuthorizedRepositoryInProject(
+          assertUuid(projectId),
+          repositoryId
+        )
+      : await resolveAuthorizedRepository(repositoryId)
     const catalog = await withUpdatedRepository(repository, (repoPath) => {
       const config = getServerConfig()
       return listDeploymentTags(repoPath, {

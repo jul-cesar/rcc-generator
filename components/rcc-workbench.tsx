@@ -118,7 +118,9 @@ export function RccWorkbench() {
     setLoading("tags")
     try {
       const response = await requestJson<TagsResponse>(
-        `/api/repositories/${encodeURIComponent(value)}/tags`
+        // projectId lets the server resolve the repository in one REST call
+        // instead of scanning every accessible project.
+        `/api/repositories/${encodeURIComponent(value)}/tags?projectId=${encodeURIComponent(projectId)}`
       )
       setTags(response.tags)
       setWarnings(response.warnings)
