@@ -144,7 +144,7 @@ Expected: FAIL because `rcc-engine.ts` does not exist.
 
 - [ ] **Step 5: Implement tag resolution and initial RCC**
 
-Use `for-each-ref`, `rev-parse <ref>^{commit}`, and first-parent commit positions. Use `git ls-tree -r -z --name-only` for initial rows and reject a requested tag unless it is an unambiguous deployment tag in the catalog.
+Use `for-each-ref`, `rev-parse <ref>^{commit}`, and first-parent commit positions. Use `git ls-tree -r -z --name-only` for initial rows and reject a requested tag unless it is an unambiguous deployment tag in the catalog. (Amended 2026-10-20: tag SHAs now resolve in a single batched `for-each-ref` using `%(*objectname)` / the ref's own object — the per-tag `rev-parse <ref>^{commit}` step was removed.)
 
 - [ ] **Step 6: Verify the initial engine**
 
@@ -228,9 +228,9 @@ git commit -m "feat: consolidate incremental RCC changes"
 - Produces: `resolveAuthorizedRepository(repositoryId): Promise<AuthorizedRepository>` by checking accessible projects and their repositories.
 - Produces: `withUpdatedRepository(repository, operation): Promise<T>`.
 
-- [ ] **Step 1: Write failing Azure CLI contract tests**
+- [ ] **Step 1: Write failing Azure DevOps REST contract tests**
 
-Inject a fake process runner and assert every `az` call includes the fixed organization, JSON parsing returns only required fields, malformed UUIDs never invoke the runner, absent/rejected PAT and permission/network failures map to safe `AppError` categories, and repository resolution rejects inaccessible IDs.
+Inject a fake `fetch` and assert every request targets the fixed organization with `api-version=7.1` and the PAT only in the `Authorization` header, JSON list envelopes return only required fields, malformed UUIDs never trigger a request, absent/rejected PAT and permission/network failures map to safe `AppError` categories, and repository resolution rejects inaccessible IDs.
 
 - [ ] **Step 2: Write failing Git authentication and locking tests**
 
@@ -244,7 +244,7 @@ Expected: FAIL because both server modules are absent.
 
 - [ ] **Step 4: Implement Azure discovery and authorization**
 
-Use `az devops project list` and `az repos list` with explicit organization and project arguments. Resolve a repository by scanning only projects returned as accessible; stop at the matching authorized repository and use its Azure-provided remote URL.
+Use `GET {org}/_apis/projects` and `GET {org}/{projectId}/_apis/repositories?includeHidden=false` (`api-version=7.1`, PAT in the `Authorization` header, never in the URL). Resolve a repository by scanning only projects returned as accessible; stop at the matching authorized repository and use its Azure-provided remote URL.
 
 - [ ] **Step 5: Implement authenticated bare clone and fetch**
 

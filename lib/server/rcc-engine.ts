@@ -13,6 +13,27 @@ export interface RccEngineOptions {
   integrationBranch: string
 }
 
+// One batched pass over refs/tags: the refname, the tag object's own sha, and
+// the sha of the dereferenced object for annotated tags. `%(*objectname)` is
+// the documented dereferencing shorthand and is empty for lightweight tags,
+// which already point at a commit (this git version does not accept the
+// explicit `%(peel:objectname)` token). Fields are space-delimited: git
+// refnames can never contain a space, and NUL delimiters cannot travel safely
+// through argv on Windows.
+const TAG_LIST_FORMAT = "%(refname:short) %(*objectname) %(objectname)"
+
+function parseTagRefs(output: Buffer): Array<{ name: string; sha: string }> {
+  const resolved: Array<{ name: string; sha: string }> = []
+  for (const line of output.toString("utf8").split(/\r?\n/)) {
+    if (!line.trim()) continue
+    const [name = "", peel = "", objectId = ""] = line.split(" ")
+    if (!name) continue
+    // Annotated tags need the peeled commit; lightweight tags are commits.
+    resolved.push({ name, sha: peel || objectId })
+  }
+  return resolved
+}
+
 async function git(repoPath: string, args: readonly string[]): Promise<Buffer> {
   const result = await runProcess("git", ["--git-dir", repoPath, ...args])
   return result.stdout
@@ -30,8 +51,8 @@ export async function listDeploymentTags(
   repoPath: string,
   options: RccEngineOptions
 ): Promise<DeploymentTagCatalog> {
-  const [tagNames, firstParentHistory] = await Promise.all([
-    git(repoPath, ["for-each-ref", "--format=%(refname:short)", "refs/tags"]),
+  const [tagRefs, firstParentHistory] = await Promise.all([
+    git(repoPath, ["for-each-ref", `--format=${TAG_LIST_FORMAT}`, "refs/tags"]),
     git(repoPath, [
       "rev-list",
       "--first-parent",
@@ -42,22 +63,9 @@ export async function listDeploymentTags(
   const commitPositions = new Map(
     lines(firstParentHistory).map((sha, index) => [sha, index])
   )
-  const resolved = await Promise.all(
-    lines(tagNames)
-      .filter((name) => name.startsWith(options.tagPrefix))
-      .map(async (name): Promise<DeploymentTag> => {
-        const sha = (
-          await git(repoPath, [
-            "rev-parse",
-            "--verify",
-            `refs/tags/${name}^{commit}`,
-          ])
-        )
-          .toString("utf8")
-          .trim()
-        return { name, sha }
-      })
-  )
+  const resolved = parseTagRefs(tagRefs)
+    .filter((ref) => ref.name.startsWith(options.tagPrefix))
+    .map((ref): DeploymentTag => ({ name: ref.name, sha: ref.sha }))
   const byCommit = new Map<string, DeploymentTag[]>()
 
   for (const tag of resolved) {

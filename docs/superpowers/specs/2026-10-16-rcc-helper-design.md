@@ -62,7 +62,7 @@ Los nombres pueden ajustarse durante la implementación si el comportamiento y l
 
 - La página y los componentes cliente gestionan selecciones, estados de carga, presentación y exportación.
 - Los Route Handlers validan entradas, autorización del catálogo y origen de solicitudes.
-- `azure-devops.ts` consulta Azure DevOps mediante Azure CLI.
+- `azure-devops.ts` consulta Azure DevOps mediante su API REST con `fetch` (PAT en cabecera, timeout de 10 segundos); no se usa Azure CLI.
 - `git-store.ts` crea y actualiza clones bare y serializa las operaciones por repositorio.
 - `rcc-engine.ts` contiene la lógica Git independiente de Azure DevOps.
 - `process.ts` ejecuta procesos sin shell y captura salidas y errores de forma segura.
@@ -87,7 +87,7 @@ Se entregará `.env.example` sin credenciales. `.env*` y `.data/` se excluirán 
 
 ## Descubrimiento y autorización
 
-`GET /api/projects` ejecuta Azure CLI para listar todos los proyectos accesibles. Si el PAT no permite descubrir proyectos, la operación falla con un mensaje claro; no existe catálogo manual de respaldo.
+`GET /api/projects` consulta la API REST (con `fetch`) para listar todos los proyectos accesibles. Si el PAT no permite descubrir proyectos, la operación falla con un mensaje claro; no existe catálogo manual de respaldo.
 
 Los identificadores del frontend nunca se usan directamente como autorización:
 
@@ -96,7 +96,9 @@ Los identificadores del frontend nunca se usan directamente como autorización:
 3. Un `repositoryId` se resuelve contra repositorios devueltos por Azure DevOps.
 4. La URL de clonación procede únicamente de ese resultado autorizado.
 
-Todas las consultas Azure CLI incluyen explícitamente `--organization https://dev.azure.com/alianzaapps`.
+Todas las consultas REST incluyen explícitamente la organización `https://dev.azure.com/alianzaapps` y `api-version=7.1`; el PAT viaja únicamente en la cabecera `Authorization`.
+
+La resolución de un repositorio dentro de un proyecto se memoiza por PAT, proyecto y repositorio con un TTL de 10 minutos (60 segundos para resultados negativos); la semántica de `NOT_FOUND` no cambia, solo se reutiliza la misma resolución que el PAT consiguió dentro del TTL.
 
 ## Almacenamiento Git
 
@@ -106,13 +108,13 @@ Cada repositorio autorizado usa un clon bare dedicado:
 .data/repositories/<repositoryId>.git
 ```
 
-Antes de consultar tags o generar RCC, el servidor crea el clon si no existe o ejecuta una actualización con tags si ya existe. No modifica los repositorios de desarrollo del usuario.
+Antes de consultar tags o generar RCC, el servidor crea el clon si no existe o ejecuta una actualización con tags si ya existe. No modifica los repositorios de desarrollo del usuario. La actualización del espejo respeta un TTL de 2 minutos (un fetch exitoso evita nuevos fetch durante ese plazo, por lo que la obsolescencia máxima es el propio TTL) y los SHA de los tags se resuelven en un único `for-each-ref` por lotes, sin un `rev-parse` por tag.
 
 Las operaciones de creación y actualización se protegen con un bloqueo en memoria por `repositoryId`. La primera versión asume un único proceso local de Next.js; no necesita bloqueo distribuido.
 
 ## Autenticación y seguridad
 
-- Azure CLI recibe `AZURE_DEVOPS_EXT_PAT` desde el entorno del backend.
+- El backend toma `AZURE_DEVOPS_EXT_PAT` del entorno y lo envía solo como cabecera `Authorization` Basic en cada llamada REST.
 - Git recibe una cabecera de autenticación mediante variables de entorno `GIT_CONFIG_*` del proceso hijo.
 - El PAT no se incluye en URLs, argumentos, respuestas, archivos ni logs.
 - Los procesos se ejecutan con `spawn` o `execFile`, `shell: false` y arrays de argumentos.
@@ -120,7 +122,7 @@ Las operaciones de creación y actualización se protegen con un bloqueo en memo
 - La aplicación se ejecuta en `127.0.0.1`.
 - No se habilita CORS.
 - `POST /rcc` valida que `Origin` corresponda al host local de la solicitud.
-- Los parámetros y cuerpos se validan antes de ejecutar Azure CLI o Git.
+- Los parámetros y cuerpos se validan antes de consultar la API REST o ejecutar Git.
 
 ## API
 
@@ -301,7 +303,6 @@ La API normaliza al menos estas categorías:
 - PAT rechazado o expirado.
 - Permiso insuficiente para listar proyectos o repositorios.
 - Repositorio inaccesible.
-- Azure CLI o extensión `azure-devops` ausente.
 - Git ausente.
 - Fallo de conexión.
 - Tag inexistente.
@@ -332,7 +333,7 @@ Casos mínimos:
 - RCC inicial con todos los archivos versionados como `A`.
 - Rango sin cambios.
 
-La capa de integración cubrirá además PAT ausente o rechazado y repositorio sin acceso mediante respuestas simuladas del ejecutor de procesos. La prueba final contra Azure DevOps será manual y solo se ejecutará cuando el PAT esté configurado localmente. Los datos sintéticos nunca se presentarán como datos reales.
+La capa de integración cubrirá además PAT ausente o rechazado y repositorio sin acceso mediante respuestas `fetch` simuladas. La prueba final contra Azure DevOps será manual y solo se ejecutará cuando el PAT esté configurado localmente. Los datos sintéticos nunca se presentarán como datos reales.
 
 ## Criterios de aceptación
 

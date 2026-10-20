@@ -2,10 +2,14 @@ import assert from "node:assert/strict"
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { afterEach, test } from "node:test"
+import { afterEach, mock, test } from "node:test"
 
 import type { AuthorizedRepository } from "../lib/rcc/types"
-import { createGitStore } from "../lib/server/git-store"
+import {
+  createGitStore,
+  FETCH_TTL_MS,
+  shouldSkipFetch,
+} from "../lib/server/git-store"
 import type { ProcessOptions, ProcessResult } from "../lib/server/process"
 
 const roots: string[] = []
@@ -133,4 +137,91 @@ test("fetches existing clones with explicit head and tag refspecs", async () => 
   assert.equal(calls[0]?.includes("--prune"), true)
   assert.equal(calls[0]?.includes("+refs/heads/*:refs/heads/*"), true)
   assert.equal(calls[0]?.includes("+refs/tags/*:refs/tags/*"), true)
+})
+
+function countFetches(args: readonly string[]): boolean {
+  return args.includes("fetch")
+}
+
+test("fetch-skip decision is pure: unknown, fresh, stale, and skewed timestamps", () => {
+  const ttl = FETCH_TTL_MS
+  const now = 1_000_000
+  assert.equal(shouldSkipFetch(undefined, now), false)
+  assert.equal(shouldSkipFetch(now, now), true)
+  assert.equal(shouldSkipFetch(now - ttl + 1, now), true)
+  assert.equal(shouldSkipFetch(now - ttl, now), false)
+  assert.equal(shouldSkipFetch(now - ttl - 1, now), false)
+  assert.equal(shouldSkipFetch(now + ttl, now), true)
+})
+
+test("skips the mirror fetch within TTL and fetches again after it expires", async () => {
+  const storeRoot = root()
+  mkdirSync(path.join(storeRoot, `${repository.id}.git`))
+  let fetches = 0
+  const runner: Runner = async (_command, args) => {
+    if (countFetches(args)) fetches += 1
+    return success()
+  }
+  const store = createGitStore({ runner, env, root: storeRoot })
+  // Deployment tags change rarely: a successful fetch must suppress further
+  // fetches for a 2-minute window, then allow exactly one more fetch.
+  const fetchTtlMs = 2 * 60 * 1000
+
+  mock.timers.enable({ apis: ["Date"] })
+  try {
+    await store.withUpdatedRepository(repository, async () => undefined)
+    assert.equal(fetches, 1)
+
+    await store.withUpdatedRepository(repository, async () => undefined)
+    assert.equal(fetches, 1)
+
+    mock.timers.tick(fetchTtlMs)
+    await store.withUpdatedRepository(repository, async () => undefined)
+    assert.equal(fetches, 2)
+  } finally {
+    mock.timers.reset()
+  }
+})
+
+test("a failed fetch does not mark the repository fresh", async () => {
+  const storeRoot = root()
+  mkdirSync(path.join(storeRoot, `${repository.id}.git`))
+  let failFetch = true
+  let fetches = 0
+  const runner: Runner = async (_command, args) => {
+    if (!countFetches(args)) return success()
+    fetches += 1
+    if (failFetch) throw new Error("network unreachable")
+    return success()
+  }
+  const store = createGitStore({ runner, env, root: storeRoot })
+
+  await assert.rejects(
+    store.withUpdatedRepository(repository, async () => undefined),
+    /network unreachable/
+  )
+  assert.equal(fetches, 1)
+
+  failFetch = false
+  await store.withUpdatedRepository(repository, async () => undefined)
+  assert.equal(fetches, 2)
+
+  await store.withUpdatedRepository(repository, async () => undefined)
+  assert.equal(fetches, 2)
+})
+
+test("a fresh clone does not fetch immediately afterwards", async () => {
+  let fetches = 0
+  const runner: Runner = async (_command, args) => {
+    if (countFetches(args)) fetches += 1
+    else if (args[0] === "clone") mkdirSync(args.at(-1)!, { recursive: true })
+    return success()
+  }
+  const store = createGitStore({ runner, env, root: root() })
+
+  await store.withUpdatedRepository(repository, async () => undefined)
+  assert.equal(fetches, 0)
+
+  await store.withUpdatedRepository(repository, async () => undefined)
+  assert.equal(fetches, 0)
 })

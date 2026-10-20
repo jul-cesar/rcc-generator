@@ -43,12 +43,27 @@ function safeRemoteUrl(value: string): string {
   return url.toString()
 }
 
+// Deployment tags change rarely; a mirror fetched successfully within this
+// window is reused without refetching, so staleness is at most the TTL.
+export const FETCH_TTL_MS = 2 * 60 * 1000
+
+// Pure decision extracted for unit testing: skip only when a previous fetch
+// succeeded within the TTL. A future timestamp (local clock moved backwards)
+// still counts as fresh because the difference stays under the TTL.
+export function shouldSkipFetch(
+  lastFetch: number | undefined,
+  now: number
+): boolean {
+  return lastFetch !== undefined && now - lastFetch < FETCH_TTL_MS
+}
+
 export function createGitStore(dependencies: GitStoreDependencies = {}) {
   const runner = dependencies.runner ?? runProcess
   const env = dependencies.env ?? process.env
   const root =
     dependencies.root ?? path.join(process.cwd(), ".data", "repositories")
   const updates = new Map<string, Promise<string>>()
+  const lastFetchAt = new Map<string, number>()
 
   async function updateRepository(
     repository: AuthorizedRepository
@@ -75,12 +90,14 @@ export function createGitStore(dependencies: GitStoreDependencies = {}) {
 
     mkdirSync(root, { recursive: true })
     if (!existsSync(repoPath)) {
+      // A fresh bare clone already contains every remote head and tag.
       await runner(
         "git",
         ["clone", "--bare", safeRemoteUrl(repository.remoteUrl), repoPath],
         processOptions
       )
-    } else {
+      lastFetchAt.set(repository.id, Date.now())
+    } else if (!shouldSkipFetch(lastFetchAt.get(repository.id), Date.now())) {
       await runner(
         "git",
         [
@@ -94,6 +111,11 @@ export function createGitStore(dependencies: GitStoreDependencies = {}) {
         ],
         processOptions
       )
+      // Notice freshness only after a successful fetch, and never move the
+      // recorded timestamp backwards if the local clock moves backwards.
+      const completedAt = Date.now()
+      const previous = lastFetchAt.get(repository.id) ?? 0
+      if (completedAt >= previous) lastFetchAt.set(repository.id, completedAt)
     }
     return repoPath
   }
