@@ -118,10 +118,12 @@ test("falls back to the repository default branch", async () => {
   ])
 })
 
-test("warns when the selected branch has no deployment tags", async () => {
+test("falls back to commits when the selected branch has no deployment tags", async () => {
   const repo = fixture()
   repo.write("app.txt", "one")
-  repo.commit("first")
+  const firstSha = repo.commit("first")
+  repo.write("app.txt", "two")
+  const secondSha = repo.commit("second")
   repo.sync()
 
   const catalog = await listDeploymentTags(repo.bare, {
@@ -129,9 +131,22 @@ test("warns when the selected branch has no deployment tags", async () => {
     integrationBranch: "develop",
   })
 
-  assert.deepEqual(catalog.tags, [])
+  assert.deepEqual(
+    catalog.tags.map(({ name, sha, commitMessage }) => ({
+      name,
+      sha,
+      commitMessage,
+    })),
+    [
+      { name: firstSha, sha: firstSha, commitMessage: "first" },
+      { name: secondSha, sha: secondSha, commitMessage: "second" },
+    ]
+  )
+  for (const commit of catalog.tags) {
+    assert.match(commit.commitDate, /^\d{4}-\d{2}-\d{2}$/)
+  }
   assert.deepEqual(catalog.warnings, [
-    'No se encontraron tags con el prefijo "develop_v" en la rama "develop".',
+    'No se encontraron tags con el prefijo "develop_v" en la rama "develop"; se usarán hasta los últimos 200 commits.',
   ])
 })
 

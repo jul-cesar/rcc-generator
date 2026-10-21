@@ -11,6 +11,7 @@ export interface DeploymentTag {
   name: string
   sha: string
   commitDate: string
+  commitMessage?: string
 }
 
 export interface TagAmbiguity {

@@ -21,6 +21,8 @@ export interface RccEngineOptions {
 // delimiters cannot travel safely through argv on Windows.
 const TAG_LIST_FORMAT =
   "%(refname:short)%09%(*objectname)%09%(objectname)%09%(*committerdate:short)%09%(committerdate:short)"
+const COMMIT_LIST_FORMAT = "%H%x09%cs%x09%s"
+const COMMIT_LIMIT = 200
 
 function parseTagRefs(output: Buffer): DeploymentTag[] {
   const resolved: DeploymentTag[] = []
@@ -37,6 +39,21 @@ function parseTagRefs(output: Buffer): DeploymentTag[] {
     })
   }
   return resolved
+}
+
+function parseCommitRefs(output: Buffer): DeploymentTag[] {
+  return lines(output).flatMap((line) => {
+    const [sha = "", commitDate = "", ...messageParts] = line.split("\t")
+    if (!sha) return []
+    return [
+      {
+        name: sha,
+        sha,
+        commitDate,
+        commitMessage: messageParts.join("\t"),
+      },
+    ]
+  })
 }
 
 async function git(repoPath: string, args: readonly string[]): Promise<Buffer> {
@@ -139,8 +156,21 @@ export async function listDeploymentTags(
 
   const warnings = [...branch.warnings]
   if (tags.length === 0) {
+    // ponytail: keep the selector bounded; add pagination if older ranges matter.
+    tags.push(
+      ...parseCommitRefs(
+        await git(repoPath, [
+          "log",
+          "--first-parent",
+          `--max-count=${COMMIT_LIMIT}`,
+          "--reverse",
+          `--format=${COMMIT_LIST_FORMAT}`,
+          `refs/heads/${branch.name}`,
+        ])
+      )
+    )
     warnings.push(
-      `No se encontraron tags con el prefijo "${options.tagPrefix}" en la rama "${branch.name}".`
+      `No se encontraron tags con el prefijo "${options.tagPrefix}" en la rama "${branch.name}"; se usarán hasta los últimos ${COMMIT_LIMIT} commits.`
     )
   }
 

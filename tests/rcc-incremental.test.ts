@@ -75,6 +75,42 @@ test("consolidates net changes with their last deployment tag", async () => {
   assert.deepEqual(unchanged.rows, [])
 })
 
+test("generates an incremental RCC between commits when tags are absent", async () => {
+  const repo = fixture()
+  repo.write("existing.txt", "one")
+  const firstSha = repo.commit("first")
+
+  repo.write("added.txt", "new")
+  repo.write("existing.txt", "two")
+  const secondSha = repo.commit("second")
+
+  repo.write("existing.txt", "three")
+  const thirdSha = repo.commit("third")
+  repo.sync()
+
+  const result = await generateIncrementalRcc(
+    repo.bare,
+    firstSha,
+    thirdSha,
+    options
+  )
+
+  assert.deepEqual(result.from, { tag: firstSha, sha: firstSha })
+  assert.deepEqual(result.to, { tag: thirdSha, sha: thirdSha })
+  assert.deepEqual(result.rows, [
+    {
+      path: "added.txt",
+      action: "A",
+      lastChangedTag: secondSha,
+    },
+    {
+      path: "existing.txt",
+      action: "M",
+      lastChangedTag: thirdSha,
+    },
+  ])
+})
+
 test("tracks a rename followed by modification", async () => {
   const repo = fixture()
   const original = Array.from(

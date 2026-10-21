@@ -30,7 +30,10 @@ export type RccMode = "initial" | "incremental"
 export type LoadingStage = "projects" | "repositories" | "tags" | "rcc" | null
 
 export function formatDeploymentTagLabel(tag: DeploymentTag) {
-  return `${tag.name} · ${tag.commitDate.split("-").reverse().join("/")}`
+  const date = tag.commitDate.split("-").reverse().join("/")
+  return tag.commitMessage
+    ? `${date} · ${tag.sha.slice(0, 7)} · ${tag.commitMessage}`
+    : `${tag.name} · ${date}`
 }
 
 export function resolveRangeSelection(

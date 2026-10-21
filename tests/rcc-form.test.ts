@@ -17,6 +17,18 @@ test("shows the commit date in a deployment tag label", () => {
   )
 })
 
+test("shows date, short SHA, and message in a commit label", () => {
+  assert.equal(
+    formatDeploymentTagLabel({
+      name: "abc1234567890",
+      sha: "abc1234567890",
+      commitDate: "2026-10-20",
+      commitMessage: "add payments table",
+    }),
+    "20/10/2026 · abc1234 · add payments table"
+  )
+})
+
 const tags = ["1", "2", "3"].map((version) => ({
   name: `develop_v${version}`,
   sha: `sha-${version}`,
