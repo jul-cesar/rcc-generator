@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AlertCircle, GitBranch, Info, ShieldCheck } from "lucide-react"
+import { AlertCircle, GitBranch, Info } from "lucide-react"
 
 import {
   RccForm,
@@ -198,10 +198,6 @@ export function RccWorkbench() {
             Consolida cambios entre entregas, identifica el último tag y exporta
             el resultado listo para Excel.
           </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
-          <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-          El PAT permanece en este equipo
         </div>
       </div>
 
