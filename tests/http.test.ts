@@ -56,11 +56,12 @@ test("rejects malformed tags before they can reach Git", () => {
   }
 })
 
-test("accepts matching loopback origins", () => {
+test("accepts matching same-origin requests", () => {
   for (const url of [
     "http://localhost:3000/api/rcc",
     "http://127.0.0.1:3000/api/rcc",
     "http://[::1]:3000/api/rcc",
+    "https://rcc.julcesar.xyz/api/rcc",
   ]) {
     const origin = new URL(url).origin
     assert.doesNotThrow(() =>

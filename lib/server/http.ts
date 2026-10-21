@@ -65,12 +65,7 @@ export function assertLocalOrigin(request: Request): void {
   } catch {
     throw new AppError("FORBIDDEN", "Origen inválido")
   }
-  const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"])
-
-  if (
-    !loopbackHosts.has(originUrl.hostname) ||
-    originUrl.origin !== requestUrl.origin
-  ) {
+  if (originUrl.origin !== requestUrl.origin) {
     throw new AppError("FORBIDDEN", "Origen no permitido")
   }
 }
