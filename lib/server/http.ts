@@ -61,7 +61,13 @@ export function assertLocalOrigin(request: Request): void {
   let requestUrl: URL
   try {
     originUrl = new URL(origin)
-    requestUrl = new URL(request.url)
+    const forwardedProtocol = request.headers.get("x-forwarded-proto")
+    const host = request.headers.get("host")
+    requestUrl = new URL(
+      forwardedProtocol && host
+        ? `${forwardedProtocol}://${host}`
+        : request.url
+    )
   } catch {
     throw new AppError("FORBIDDEN", "Origen inválido")
   }

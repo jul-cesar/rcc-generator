@@ -70,6 +70,20 @@ test("accepts matching same-origin requests", () => {
   }
 })
 
+test("accepts the public origin forwarded by a reverse proxy", () => {
+  assert.doesNotThrow(() =>
+    assertLocalOrigin(
+      new Request("http://app:3000/api/rcc", {
+        headers: {
+          host: "rcc.julcesar.xyz",
+          origin: "https://rcc.julcesar.xyz",
+          "x-forwarded-proto": "https",
+        },
+      })
+    )
+  )
+})
+
 test("rejects absent, foreign, and host-mismatched origins", () => {
   assert.throws(
     () => assertLocalOrigin(new Request("http://127.0.0.1:3000/api/rcc")),
