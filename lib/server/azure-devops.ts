@@ -214,7 +214,7 @@ export function createAzureDevOpsClient(
   ): Promise<AuthorizedRepository[]> {
     assertAzureId(projectId)
     const payload = await requestJson(
-      apiUrl(`${encodeURIComponent(projectId)}/_apis/repositories`, {
+      apiUrl(`${encodeURIComponent(projectId)}/_apis/git/repositories`, {
         "api-version": API_VERSION,
         includeHidden: "false",
       })

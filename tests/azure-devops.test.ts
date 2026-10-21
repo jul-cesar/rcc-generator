@@ -247,7 +247,7 @@ test("resolves a repository inside a project with exactly one fetch", async () =
   assert.equal(url.hostname, "dev.azure.com")
   assert.equal(
     url.pathname,
-    `/alianzaapps/${PROJECT_TWO}/_apis/repositories`
+    `/alianzaapps/${PROJECT_TWO}/_apis/git/repositories`
   )
   assert.equal(url.searchParams.get("api-version"), "7.1")
   assert.equal(url.searchParams.get("includeHidden"), "false")
@@ -385,4 +385,15 @@ test("lists repositories of a project via the REST endpoint", async () => {
     { id: REPOSITORY, name: "Repo" },
   ])
   assert.equal(recording.calls.length, 1)
+  const call = recording.calls[0]
+  const url = new URL(call.url)
+  assert.equal(url.hostname, "dev.azure.com")
+  assert.equal(
+    url.pathname,
+    `/alianzaapps/${PROJECT_TWO}/_apis/git/repositories`
+  )
+  assert.equal(url.searchParams.get("api-version"), "7.1")
+  assert.equal(url.searchParams.get("includeHidden"), "false")
+  assert.equal(call.headers["accept"], "application/json")
+  assert.match(call.headers["authorization"], /^Basic /)
 })

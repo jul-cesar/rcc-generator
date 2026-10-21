@@ -21,9 +21,9 @@ test("formats RCC rows as safe tab-separated text", () => {
   assert.equal(
     tsv,
     [
-      "Ruta\tRuta anterior\tAcción\tÚltimo tag",
-      "src/archivo ñ.ts\t\tA\tdevelop_v1",
-      "src/nuevo archivo.ts\tsrc/anterior archivo.ts\tM\tdevelop_v2",
+      "Orden de Instalación\tPasos\tAcción\tDirectorio|Objeto|",
+      "1\t\tA\tsrc/archivo ñ.ts",
+      "2\t\tM\tsrc/nuevo archivo.ts",
     ].join("\n")
   )
 })

@@ -67,8 +67,10 @@ npm start
 El TXT y el contenido copiado tienen las mismas columnas tabuladas:
 
 ```text
-Ruta    Ruta anterior    Acción    Último tag
+Orden de Instalación    Pasos    Acción    Directorio|Objeto|
 ```
+
+Las filas conservan el orden alfabético de las rutas y se numeran desde `1`. La columna `Pasos` se entrega vacía para completar en Excel.
 
 Acciones:
 
@@ -76,17 +78,18 @@ Acciones:
 - `M`: modificado o renombrado.
 - `D`: eliminado.
 
-Los renombrados muestran también la ruta anterior. Git los detecta por similitud.
+Los renombrados usan acción `M` y muestran la ruta final. Git los detecta por similitud.
 
 ## Reglas de comparación
 
 - El tag inicial representa lo ya entregado y queda excluido.
 - El tag final queda incluido.
-- Los tags se ordenan por el historial first-parent de `develop`, no por nombre o fecha.
+- Los tags se ordenan por el historial first-parent de la rama configurada o, si no existe, de la rama predeterminada del repositorio.
 - Cada ruta aparece una sola vez con el último tag donde cambió.
 - La acción se calcula comparando los extremos del rango.
 - Los cambios revertidos por completo no aparecen.
-- Tags ambiguos sobre un mismo commit, rangos invertidos e historias incompatibles se rechazan.
+- Si varios tags apuntan al mismo commit, se usa la versión más alta y se informan los demás como alias.
+- Los rangos invertidos y las historias incompatibles se rechazan.
 - Los tags son referencias del proceso actual; su existencia no confirma que el despliegue haya terminado correctamente.
 
 ## Copias locales
@@ -105,8 +108,8 @@ Estas copias no contienen carpeta de trabajo y no modifican los repositorios don
 - **PAT rechazado o sin permisos:** confirma que no expiró y que permite leer proyectos y código.
 - **Azure CLI no disponible:** instala Azure CLI y la extensión `azure-devops`.
 - **Git no disponible:** instala Git y confirma que `git --version` funciona.
-- **Tag no visible:** confirma el prefijo `RCC_TAG_PREFIX` y que el tag pertenece al historial first-parent de `develop`.
-- **Tags ambiguos:** elimina la ambigüedad del proceso de tags; la aplicación no selecciona uno arbitrariamente.
+- **Tag no visible:** confirma el prefijo `RCC_TAG_PREFIX` y que el tag pertenece al historial de la rama de integración mostrada.
+- **Tags alias:** si varios tags apuntan al mismo commit, se usa la versión más alta.
 
 ## Verificación
 

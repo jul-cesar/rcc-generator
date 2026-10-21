@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react"
 import { AlertCircle, GitBranch, Info, ShieldCheck } from "lucide-react"
 
-import { RccForm, type LoadingStage, type RccMode } from "@/components/rcc-form"
+import {
+  RccForm,
+  resolveRangeSelection,
+  type LoadingStage,
+  type RccMode,
+} from "@/components/rcc-form"
 import { RccLoadingOverlay } from "@/components/rcc-loading-overlay"
 import { RccResults } from "@/components/rcc-results"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -178,7 +183,7 @@ export function RccWorkbench() {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 xl:max-w-[1440px] 2xl:max-w-[1680px] lg:px-8 lg:pb-12"
+      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 sm:pb-10 lg:px-8 lg:pb-12 xl:max-w-[1440px] 2xl:max-w-[1680px]"
       aria-busy={generatingRcc ? true : undefined}
     >
       {/* The app header (RccHeader) now carries the page title; this slim row
@@ -189,7 +194,7 @@ export function RccWorkbench() {
             <GitBranch className="size-3.5" />
             Azure DevOps · develop
           </div>
-          <p className="text-pretty text-sm text-muted-foreground sm:text-base">
+          <p className="text-sm text-pretty text-muted-foreground sm:text-base">
             Consolida cambios entre entregas, identifica el último tag y exporta
             el resultado listo para Excel.
           </p>
@@ -211,7 +216,7 @@ export function RccWorkbench() {
       {warnings.map((warning) => (
         <Alert key={warning}>
           <Info />
-          <AlertTitle>Advertencia de tags</AlertTitle>
+          <AlertTitle>Advertencia del repositorio</AlertTitle>
           <AlertDescription>{warning}</AlertDescription>
         </Alert>
       ))}
@@ -235,6 +240,11 @@ export function RccWorkbench() {
         }}
         onToTagChange={(value) => {
           setToTag(value)
+          if (mode === "incremental") {
+            const range = resolveRangeSelection(tags, fromTag, value)
+            setMode(range.mode)
+            setFromTag(range.fromTag)
+          }
           setResult(null)
         }}
         onSubmit={() => void generateRcc()}

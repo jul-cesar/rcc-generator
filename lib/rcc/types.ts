@@ -10,6 +10,7 @@ export interface RccRow {
 export interface DeploymentTag {
   name: string
   sha: string
+  commitDate: string
 }
 
 export interface TagAmbiguity {
@@ -20,6 +21,7 @@ export interface TagAmbiguity {
 export interface DeploymentTagCatalog {
   tags: DeploymentTag[]
   ambiguities: TagAmbiguity[]
+  warnings: string[]
 }
 
 export interface TagReference {

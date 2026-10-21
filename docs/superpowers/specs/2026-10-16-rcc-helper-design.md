@@ -148,9 +148,9 @@ Devuelve repositorios autorizados del proyecto:
 
 ### `GET /api/repositories/:repositoryId/tags`
 
-Actualiza la copia bare y devuelve tags cuyo nombre empieza por `RCC_TAG_PREFIX`, ordenados según el historial first-parent de `develop`.
+Actualiza la copia bare y devuelve tags cuyo nombre empieza por `RCC_TAG_PREFIX`, ordenados según el historial first-parent de la rama configurada. Si esa rama no existe, usa la rama predeterminada del repositorio y devuelve una advertencia.
 
-Cada elemento incluye nombre y SHA completo resuelto. Los tags fuera del historial válido no se ofrecen como extremos seleccionables. Si varios tags de despliegue apuntan al mismo commit, la respuesta identifica la ambigüedad y no elige uno arbitrariamente.
+Cada elemento incluye nombre, SHA y fecha del commit. Los tags fuera del historial válido no se ofrecen como extremos seleccionables. Si varios tags de despliegue apuntan al mismo commit, se usa la versión más alta y los demás se informan como alias.
 
 ### `POST /api/repositories/:repositoryId/rcc`
 
@@ -210,7 +210,8 @@ En modo inicial, `from` se omite.
 - El orden depende del historial Git, no del nombre ni de la fecha.
 - Un rango incremental exige que ambos extremos estén en esa secuencia y que el tag inicial preceda al final.
 - Los rangos invertidos, ramas divergentes y tags incompatibles se rechazan.
-- Varios tags de despliegue sobre un mismo commit producen ambigüedad explícita.
+- Varios tags de despliegue sobre un mismo commit se tratan como alias; el de versión más alta es el canónico.
+- Cada tag incluye la fecha de su commit para mostrarla en los selectores.
 
 ### RCC inicial
 
@@ -274,7 +275,7 @@ Se usarán únicamente los componentes shadcn necesarios: `Select`, `Button`, `T
 La tabla contiene:
 
 ```text
-Ruta | Ruta anterior | Acción | Último tag
+Orden de Instalación | Pasos | Acción | Directorio|Objeto|
 ```
 
 Los estados visibles incluyen carga, rango sin cambios y errores comprensibles.
@@ -284,7 +285,7 @@ Los estados visibles incluyen carga, rango sin cambios y errores comprensibles.
 Copiar y descargar usan exactamente el mismo contenido TSV, con encabezados:
 
 ```text
-Ruta	Ruta anterior	Acción	Último tag
+Orden de Instalación	Pasos	Acción	Directorio|Objeto|
 ```
 
 El archivo descargado se denomina:
@@ -306,7 +307,8 @@ La API normaliza al menos estas categorías:
 - Git ausente.
 - Fallo de conexión.
 - Tag inexistente.
-- Tags ambiguos.
+- Tags alias sobre un mismo commit.
+- Rama de integración ausente, con fallback o error comprensible.
 - Rango invertido.
 - Historia incompatible.
 - Rango sin cambios, representado como resultado válido con `rows: []`.
@@ -326,7 +328,8 @@ Casos mínimos:
 - Cambio revertido completamente.
 - Cambios introducidos mediante merge.
 - Tags anotados y ligeros.
-- Tags ambiguos.
+- Tags alias y selección de la versión canónica.
+- Fallback a la rama predeterminada.
 - Rango invertido.
 - Historia divergente.
 - Rutas con espacios y caracteres especiales.

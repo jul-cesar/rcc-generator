@@ -17,19 +17,24 @@ export interface RccEngineOptions {
 // the sha of the dereferenced object for annotated tags. `%(*objectname)` is
 // the documented dereferencing shorthand and is empty for lightweight tags,
 // which already point at a commit (this git version does not accept the
-// explicit `%(peel:objectname)` token). Fields are space-delimited: git
-// refnames can never contain a space, and NUL delimiters cannot travel safely
-// through argv on Windows.
-const TAG_LIST_FORMAT = "%(refname:short) %(*objectname) %(objectname)"
+// explicit `%(peel:objectname)` token). Fields are tab-delimited because NUL
+// delimiters cannot travel safely through argv on Windows.
+const TAG_LIST_FORMAT =
+  "%(refname:short)%09%(*objectname)%09%(objectname)%09%(*committerdate:short)%09%(committerdate:short)"
 
-function parseTagRefs(output: Buffer): Array<{ name: string; sha: string }> {
-  const resolved: Array<{ name: string; sha: string }> = []
+function parseTagRefs(output: Buffer): DeploymentTag[] {
+  const resolved: DeploymentTag[] = []
   for (const line of output.toString("utf8").split(/\r?\n/)) {
     if (!line.trim()) continue
-    const [name = "", peel = "", objectId = ""] = line.split(" ")
+    const [name = "", peel = "", objectId = "", peeledDate = "", date = ""] =
+      line.split("\t")
     if (!name) continue
     // Annotated tags need the peeled commit; lightweight tags are commits.
-    resolved.push({ name, sha: peel || objectId })
+    resolved.push({
+      name,
+      sha: peel || objectId,
+      commitDate: peeledDate || date,
+    })
   }
   return resolved
 }
@@ -47,25 +52,62 @@ function lines(output: Buffer): string[] {
     .filter(Boolean)
 }
 
+async function resolveIntegrationBranch(
+  repoPath: string,
+  configuredBranch: string
+): Promise<{ name: string; warnings: string[] }> {
+  const [branchRefs, defaultBranchRef] = await Promise.all([
+    git(repoPath, ["for-each-ref", "--format=%(refname:short)", "refs/heads"]),
+    git(repoPath, ["symbolic-ref", "--quiet", "--short", "HEAD"]).catch(() =>
+      Buffer.alloc(0)
+    ),
+  ])
+  const branches = lines(branchRefs)
+  if (branches.includes(configuredBranch)) {
+    return { name: configuredBranch, warnings: [] }
+  }
+
+  const defaultBranch = lines(defaultBranchRef)[0]
+  if (defaultBranch && branches.includes(defaultBranch)) {
+    return {
+      name: defaultBranch,
+      warnings: [
+        `La rama "${configuredBranch}" no existe; se usará la rama predeterminada "${defaultBranch}".`,
+      ],
+    }
+  }
+
+  throw new AppError(
+    "NOT_FOUND",
+    `La rama de integración "${configuredBranch}" no existe y el repositorio no tiene una rama predeterminada válida. Ramas disponibles: ${branches.join(", ") || "ninguna"}.`
+  )
+}
+
 export async function listDeploymentTags(
   repoPath: string,
   options: RccEngineOptions
 ): Promise<DeploymentTagCatalog> {
-  const [tagRefs, firstParentHistory] = await Promise.all([
-    git(repoPath, ["for-each-ref", `--format=${TAG_LIST_FORMAT}`, "refs/tags"]),
+  const [tagRefs, branch] = await Promise.all([
     git(repoPath, [
-      "rev-list",
-      "--first-parent",
-      "--reverse",
-      `refs/heads/${options.integrationBranch}`,
+      "for-each-ref",
+      "--sort=version:refname",
+      `--format=${TAG_LIST_FORMAT}`,
+      "refs/tags",
     ]),
+    resolveIntegrationBranch(repoPath, options.integrationBranch),
+  ])
+  const firstParentHistory = await git(repoPath, [
+    "rev-list",
+    "--first-parent",
+    "--reverse",
+    `refs/heads/${branch.name}`,
   ])
   const commitPositions = new Map(
     lines(firstParentHistory).map((sha, index) => [sha, index])
   )
-  const resolved = parseTagRefs(tagRefs)
-    .filter((ref) => ref.name.startsWith(options.tagPrefix))
-    .map((ref): DeploymentTag => ({ name: ref.name, sha: ref.sha }))
+  const resolved = parseTagRefs(tagRefs).filter((ref) =>
+    ref.name.startsWith(options.tagPrefix)
+  )
   const byCommit = new Map<string, DeploymentTag[]>()
 
   for (const tag of resolved) {
@@ -79,12 +121,14 @@ export async function listDeploymentTags(
   const ambiguities: DeploymentTagCatalog["ambiguities"] = []
 
   for (const [sha, commitTags] of byCommit) {
-    commitTags.sort((left, right) => left.name.localeCompare(right.name))
+    commitTags.sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, { numeric: true })
+    )
     if (commitTags.length > 1) {
       ambiguities.push({ sha, tags: commitTags.map((tag) => tag.name) })
-    } else {
-      tags.push(commitTags[0]!)
     }
+    const canonicalTag = commitTags.at(-1)
+    if (canonicalTag) tags.push(canonicalTag)
   }
 
   const byHistory = (left: { sha: string }, right: { sha: string }) =>
@@ -93,7 +137,14 @@ export async function listDeploymentTags(
   tags.sort(byHistory)
   ambiguities.sort(byHistory)
 
-  return { tags, ambiguities }
+  const warnings = [...branch.warnings]
+  if (tags.length === 0) {
+    warnings.push(
+      `No se encontraron tags con el prefijo "${options.tagPrefix}" en la rama "${branch.name}".`
+    )
+  }
+
+  return { tags, ambiguities, warnings }
 }
 
 export interface NameStatusChange {
@@ -142,17 +193,6 @@ export async function generateInitialRcc(
   options: RccEngineOptions
 ): Promise<RccResult> {
   const catalog = await listDeploymentTags(repoPath, options)
-  const ambiguity = catalog.ambiguities.find((item) =>
-    item.tags.includes(toTag)
-  )
-
-  if (ambiguity) {
-    throw new AppError(
-      "CONFLICT",
-      `Tags de despliegue ambiguos para ${ambiguity.sha}: ${ambiguity.tags.join(", ")}`
-    )
-  }
-
   const selected = catalog.tags.find((tag) => tag.name === toTag)
   if (!selected) {
     throw new AppError("NOT_FOUND", `Tag de despliegue no válido: ${toTag}`)
@@ -195,16 +235,6 @@ export async function generateIncrementalRcc(
   options: RccEngineOptions
 ): Promise<RccResult> {
   const catalog = await listDeploymentTags(repoPath, options)
-  const selectedAmbiguity = catalog.ambiguities.find(
-    (item) => item.tags.includes(fromTag) || item.tags.includes(toTag)
-  )
-  if (selectedAmbiguity) {
-    throw new AppError(
-      "CONFLICT",
-      `Tags de despliegue ambiguos para ${selectedAmbiguity.sha}: ${selectedAmbiguity.tags.join(", ")}`
-    )
-  }
-
   const fromIndex = catalog.tags.findIndex((tag) => tag.name === fromTag)
   const toIndex = catalog.tags.findIndex((tag) => tag.name === toTag)
   if (fromIndex < 0 || toIndex < 0) {
@@ -222,32 +252,6 @@ export async function generateIncrementalRcc(
 
   const from = catalog.tags[fromIndex]!
   const to = catalog.tags[toIndex]!
-  const history = lines(
-    await git(repoPath, [
-      "rev-list",
-      "--first-parent",
-      "--reverse",
-      `refs/heads/${options.integrationBranch}`,
-    ])
-  )
-  const positions = new Map(history.map((sha, index) => [sha, index]))
-  const fromPosition = positions.get(from.sha)!
-  const toPosition = positions.get(to.sha)!
-  const ambiguityInRange = catalog.ambiguities.find((item) => {
-    const position = positions.get(item.sha)
-    return (
-      position !== undefined &&
-      position > fromPosition &&
-      position <= toPosition
-    )
-  })
-  if (ambiguityInRange) {
-    throw new AppError(
-      "CONFLICT",
-      `Tags de despliegue ambiguos para ${ambiguityInRange.sha}: ${ambiguityInRange.tags.join(", ")}`
-    )
-  }
-
   const lastEvent = new Map<string, ChangeEvent>()
   const aliasesByPath = new Map<string, Set<string>>()
   let ordinal = 0

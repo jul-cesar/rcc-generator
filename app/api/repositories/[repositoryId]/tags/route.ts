@@ -33,9 +33,13 @@ export async function GET(request: Request, context: RouteContext) {
     })
     return Response.json({
       ...catalog,
-      warnings: catalog.ambiguities.map(
-        ({ sha, tags }) => `Tags ambiguos en ${sha}: ${tags.join(", ")}`
-      ),
+      warnings: [
+        ...catalog.warnings,
+        ...catalog.ambiguities.map(
+          ({ sha, tags }) =>
+            `Los tags ${tags.join(", ")} apuntan al mismo commit ${sha}; se usará ${tags.at(-1)}.`
+        ),
+      ],
     })
   } catch (error) {
     return errorResponse(error)

@@ -1,0 +1,25 @@
+bugs:
+  - bug_id: BUG-2026-10-20T153921
+    date: 2026-10-20
+    severity: LOW
+    priority: MEDIUM
+    scope: rcc-incremental-range-selection
+    summary: El formulario permite enviar el mismo tag como inicio y final.
+    file: specs/bugs/BUG-2026-10-20T153921-rango-con-mismo-tag.md
+  - bug_id: BUG-2026-10-20T161642
+    date: 2026-10-20
+    severity: LOW
+    priority: HIGH
+    scope: deployment-tag-catalog
+    summary: >-
+      Los tags alias de un commit eliminan todas las opciones
+      seleccionables.
+    file: specs/bugs/BUG-2026-10-20T161642-tags-alias-bloquean-selector.md
+  - bug_id: BUG-2026-10-20T184911
+    date: 2026-10-20
+    severity: LOW
+    priority: HIGH
+    scope: integration-branch-resolution
+    summary: >-
+      Una rama de integración ausente expone un error crudo de Git.
+    file: specs/bugs/BUG-2026-10-20T184911-rama-integracion-ausente.md

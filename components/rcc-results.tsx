@@ -105,28 +105,32 @@ export function RccResults({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[40ch]">Ruta</TableHead>
-                <TableHead className="min-w-[40ch]">Ruta anterior</TableHead>
-                <TableHead className="w-24">Acción</TableHead>
-                <TableHead>Último tag</TableHead>
+                <TableHead className="w-32 text-center">
+                  Orden de Instalación
+                </TableHead>
+                <TableHead className="w-24 text-center">Pasos</TableHead>
+                <TableHead className="w-24 text-center">Acción</TableHead>
+                <TableHead className="min-w-[40ch]">
+                  Directorio|Objeto|
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {result.rows.map((row) => (
+              {result.rows.map((row, index) => (
                 <TableRow key={`${row.action}:${row.path}`}>
-                  <TableCell className="min-w-[40ch] font-mono text-xs">
-                    {row.path}
+                  <TableCell className="text-center font-mono text-xs tabular-nums">
+                    {index + 1}
                   </TableCell>
-                  <TableCell className="min-w-[40ch] font-mono text-xs text-muted-foreground">
-                    {row.previousPath ?? "—"}
+                  <TableCell className="text-center">
+                    <span className="sr-only">Sin pasos</span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <span className="inline-flex min-w-7 justify-center rounded-full bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                       {row.action}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {row.lastChangedTag}
+                  <TableCell className="min-w-[40ch] font-mono text-xs">
+                    {row.path}
                   </TableCell>
                 </TableRow>
               ))}

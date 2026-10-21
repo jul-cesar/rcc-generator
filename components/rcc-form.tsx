@@ -29,6 +29,27 @@ import { LoaderCircle, Search } from "lucide-react"
 export type RccMode = "initial" | "incremental"
 export type LoadingStage = "projects" | "repositories" | "tags" | "rcc" | null
 
+export function formatDeploymentTagLabel(tag: DeploymentTag) {
+  return `${tag.name} · ${tag.commitDate.split("-").reverse().join("/")}`
+}
+
+export function resolveRangeSelection(
+  tags: DeploymentTag[],
+  fromTag: string,
+  toTag: string
+): { mode: RccMode; fromTag: string } {
+  const fromIndex = tags.findIndex((tag) => tag.name === fromTag)
+  const toIndex = tags.findIndex((tag) => tag.name === toTag)
+  if (fromIndex >= 0 && fromIndex < toIndex) {
+    return { mode: "incremental", fromTag }
+  }
+
+  const previousTag = tags[toIndex - 1]
+  return previousTag
+    ? { mode: "incremental", fromTag: previousTag.name }
+    : { mode: "initial", fromTag: "" }
+}
+
 interface RccFormProps {
   projects: ProjectSummary[]
   repositories: RepositorySummary[]
@@ -149,11 +170,13 @@ function ComboboxField({
 
 export function RccForm(props: RccFormProps) {
   const busy = props.loading !== null
+  const range = resolveRangeSelection(props.tags, props.fromTag, props.toTag)
   const canSubmit =
     !busy &&
     props.repositoryId !== "" &&
     props.toTag !== "" &&
-    (props.mode === "initial" || props.fromTag !== "")
+    (props.mode === "initial" ||
+      (range.mode === "incremental" && range.fromTag === props.fromTag))
 
   return (
     <section
@@ -228,9 +251,9 @@ export function RccForm(props: RccFormProps) {
             label="Entrega anterior"
             value={props.fromTag}
             placeholder="Tag inicial (no se incluye)"
-            options={props.tags.map(({ name }) => ({
-              value: name,
-              label: name,
+            options={props.tags.map((tag) => ({
+              value: tag.name,
+              label: formatDeploymentTagLabel(tag),
             }))}
             disabled={busy || !props.repositoryId || props.tags.length === 0}
             onChange={props.onFromTagChange}
@@ -241,7 +264,10 @@ export function RccForm(props: RccFormProps) {
           label={props.mode === "initial" ? "Primera entrega" : "Entrega final"}
           value={props.toTag}
           placeholder="Tag final (sí se incluye)"
-          options={props.tags.map(({ name }) => ({ value: name, label: name }))}
+          options={props.tags.map((tag) => ({
+            value: tag.name,
+            label: formatDeploymentTagLabel(tag),
+          }))}
           disabled={busy || !props.repositoryId || props.tags.length === 0}
           onChange={props.onToTagChange}
         />

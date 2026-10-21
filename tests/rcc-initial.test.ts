@@ -49,19 +49,19 @@ test("lists every versioned file at the selected tag as added", async () => {
   assert.deepEqual(result.warnings, [])
 })
 
-test("rejects an ambiguous deployment tag", async () => {
+test("uses the highest version tag when aliases share a commit", async () => {
   const repo = fixture()
   repo.write("file.txt", "content")
   repo.commit("initial")
-  repo.tag("develop_v1")
-  repo.tag("develop_v1-alias")
+  repo.tag("develop_v1.0.9")
+  repo.tag("develop_v1.0.10")
   repo.sync()
 
-  await assert.rejects(
-    generateInitialRcc(repo.bare, "develop_v1", {
-      tagPrefix: "develop_v",
-      integrationBranch: "develop",
-    }),
-    /ambiguos/i
-  )
+  const result = await generateInitialRcc(repo.bare, "develop_v1.0.10", {
+    tagPrefix: "develop_v",
+    integrationBranch: "develop",
+  })
+
+  assert.equal(result.to.tag, "develop_v1.0.10")
+  assert.equal(result.rows[0]?.lastChangedTag, "develop_v1.0.10")
 })

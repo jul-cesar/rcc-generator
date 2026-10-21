@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import { afterEach, test } from "node:test"
 
 import { listDeploymentTags } from "../lib/server/rcc-engine"
@@ -31,7 +32,7 @@ test("orders lightweight and annotated deployment tags by first-parent history",
   repo.checkout("develop")
 
   repo.write("app.txt", "three")
-  repo.commit("third")
+  const thirdSha = repo.commit("third")
   repo.tag("develop_v3a")
   repo.tag("develop_v3b")
   repo.sync()
@@ -41,15 +42,22 @@ test("orders lightweight and annotated deployment tags by first-parent history",
     integrationBranch: "develop",
   })
 
-  assert.deepEqual(catalog.tags, [
-    { name: "develop_v1", sha: firstSha },
-    { name: "develop_v2", sha: secondSha },
-  ])
+  assert.deepEqual(
+    catalog.tags.map(({ name, sha }) => ({ name, sha })),
+    [
+      { name: "develop_v1", sha: firstSha },
+      { name: "develop_v2", sha: secondSha },
+      { name: "develop_v3b", sha: thirdSha },
+    ]
+  )
+  for (const tag of catalog.tags) {
+    assert.match(tag.commitDate, /^\d{4}-\d{2}-\d{2}$/)
+  }
   assert.equal(catalog.ambiguities.length, 1)
   assert.deepEqual(catalog.ambiguities[0]?.tags, ["develop_v3a", "develop_v3b"])
 })
 
-test("resolves annotated, lightweight, and duplicate-commit tags in one batched pass", async () => {
+test("uses the highest version as canonical for duplicate-commit tags", async () => {
   const repo = fixture()
   repo.write("app.txt", "one")
   const firstSha = repo.commit("first")
@@ -61,8 +69,8 @@ test("resolves annotated, lightweight, and duplicate-commit tags in one batched 
 
   repo.write("app.txt", "three")
   const thirdSha = repo.commit("third")
-  repo.tag("develop_v3a", true)
-  repo.tag("develop_v3b")
+  repo.tag("develop_v1.0.9", true)
+  repo.tag("develop_v1.0.10")
   repo.sync()
 
   const catalog = await listDeploymentTags(repo.bare, {
@@ -70,12 +78,85 @@ test("resolves annotated, lightweight, and duplicate-commit tags in one batched 
     integrationBranch: "develop",
   })
 
-  assert.deepEqual(catalog.tags, [
-    { name: "develop_v1", sha: firstSha },
-    { name: "develop_v2", sha: secondSha },
-  ])
+  assert.deepEqual(
+    catalog.tags.map(({ name, sha }) => ({ name, sha })),
+    [
+      { name: "develop_v1", sha: firstSha },
+      { name: "develop_v2", sha: secondSha },
+      { name: "develop_v1.0.10", sha: thirdSha },
+    ]
+  )
   const ambiguity = catalog.ambiguities[0]
   assert.equal(catalog.ambiguities.length, 1)
   assert.equal(ambiguity?.sha, thirdSha)
-  assert.deepEqual(ambiguity?.tags, ["develop_v3a", "develop_v3b"])
+  assert.deepEqual(ambiguity?.tags, ["develop_v1.0.9", "develop_v1.0.10"])
+})
+
+test("falls back to the repository default branch", async () => {
+  const repo = fixture()
+  repo.write("app.txt", "one")
+  const sha = repo.commit("first")
+  repo.tag("develop_v1")
+  repo.sync()
+  execFileSync(
+    "git",
+    ["--git-dir", repo.bare, "symbolic-ref", "HEAD", "refs/heads/develop"],
+    { stdio: "ignore" }
+  )
+
+  const catalog = await listDeploymentTags(repo.bare, {
+    tagPrefix: "develop_v",
+    integrationBranch: "missing",
+  })
+
+  assert.deepEqual(
+    catalog.tags.map(({ name, sha: tagSha }) => ({ name, sha: tagSha })),
+    [{ name: "develop_v1", sha }]
+  )
+  assert.deepEqual(catalog.warnings, [
+    'La rama "missing" no existe; se usará la rama predeterminada "develop".',
+  ])
+})
+
+test("warns when the selected branch has no deployment tags", async () => {
+  const repo = fixture()
+  repo.write("app.txt", "one")
+  repo.commit("first")
+  repo.sync()
+
+  const catalog = await listDeploymentTags(repo.bare, {
+    tagPrefix: "develop_v",
+    integrationBranch: "develop",
+  })
+
+  assert.deepEqual(catalog.tags, [])
+  assert.deepEqual(catalog.warnings, [
+    'No se encontraron tags con el prefijo "develop_v" en la rama "develop".',
+  ])
+})
+
+test("reports a friendly error when no integration branch can be resolved", async () => {
+  const repo = fixture()
+  repo.write("app.txt", "one")
+  repo.commit("first")
+  repo.sync()
+  execFileSync(
+    "git",
+    [
+      "--git-dir",
+      repo.bare,
+      "symbolic-ref",
+      "HEAD",
+      "refs/heads/missing-default",
+    ],
+    { stdio: "ignore" }
+  )
+
+  await assert.rejects(
+    listDeploymentTags(repo.bare, {
+      tagPrefix: "develop_v",
+      integrationBranch: "missing",
+    }),
+    /rama de integración.*no existe.*Ramas disponibles: develop/i
+  )
 })

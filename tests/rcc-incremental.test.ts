@@ -141,7 +141,30 @@ test("includes changes introduced by a merge", async () => {
   ])
 })
 
-test("rejects inverted, divergent, and ambiguous histories", async () => {
+test("uses the highest version tag when aliases share a commit", async () => {
+  const repo = fixture()
+  repo.write("file.txt", "one")
+  repo.commit("v1")
+  repo.tag("develop_v1.0.8")
+
+  repo.write("file.txt", "two")
+  repo.commit("v2")
+  repo.tag("develop_v1.0.9")
+  repo.tag("develop_v1.0.10")
+  repo.sync()
+
+  const result = await generateIncrementalRcc(
+    repo.bare,
+    "develop_v1.0.8",
+    "develop_v1.0.10",
+    options
+  )
+
+  assert.equal(result.to.tag, "develop_v1.0.10")
+  assert.equal(result.rows[0]?.lastChangedTag, "develop_v1.0.10")
+})
+
+test("rejects inverted and divergent histories", async () => {
   const repo = fixture()
   repo.write("file.txt", "one")
   const first = repo.commit("v1")
@@ -150,7 +173,6 @@ test("rejects inverted, divergent, and ambiguous histories", async () => {
   repo.write("file.txt", "two")
   repo.commit("v2")
   repo.tag("develop_v2")
-  repo.tag("develop_v2-alias")
 
   repo.write("file.txt", "three")
   repo.commit("v3")
@@ -170,10 +192,6 @@ test("rejects inverted, divergent, and ambiguous histories", async () => {
   await assert.rejects(
     generateIncrementalRcc(repo.bare, "develop_v-side", "develop_v3", options),
     /historial|válido/i
-  )
-  await assert.rejects(
-    generateIncrementalRcc(repo.bare, "develop_v1", "develop_v3", options),
-    /ambiguos/i
   )
 })
 

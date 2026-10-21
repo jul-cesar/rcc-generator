@@ -1,6 +1,6 @@
 import type { RccRequest, RccRow } from "./types"
 
-const HEADER = "Ruta\tRuta anterior\tAcción\tÚltimo tag"
+const HEADER = "Orden de Instalación\tPasos\tAcción\tDirectorio|Objeto|"
 
 function safeCell(value: string): string {
   return value.replace(/[\t\r\n]+/g, " ")
@@ -17,10 +17,8 @@ function safeFilenamePart(value: string): string {
 export function rowsToTsv(rows: readonly RccRow[]): string {
   return [
     HEADER,
-    ...rows.map((row) =>
-      [row.path, row.previousPath ?? "", row.action, row.lastChangedTag]
-        .map(safeCell)
-        .join("\t")
+    ...rows.map((row, index) =>
+      [String(index + 1), "", row.action, row.path].map(safeCell).join("\t")
     ),
   ].join("\n")
 }
