@@ -30,6 +30,7 @@ test("renders the Excel column order and installation sequence", () => {
     "Pasos",
     "Acción",
     "Directorio|Objeto|",
+    "Tag/Versión",
   ]
   assert.deepEqual(
     headers.map((header) => html.indexOf(header)),
@@ -39,5 +40,6 @@ test("renders the Excel column order and installation sequence", () => {
   )
   assert.match(html, />1<\/td>/)
   assert.match(html, />src\/app\.ts<\/td>/)
-  assert.doesNotMatch(html, /Ruta anterior|Último tag/)
+  assert.match(html, />develop_v1<\/td>/)
+  assert.doesNotMatch(html, /Ruta anterior/)
 })
