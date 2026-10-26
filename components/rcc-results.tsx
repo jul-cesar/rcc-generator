@@ -113,6 +113,7 @@ export function RccResults({
                 <TableHead className="min-w-[40ch]">
                   Directorio|Objeto|
                 </TableHead>
+                <TableHead className="min-w-[18ch]">Tag/Versión</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,6 +132,9 @@ export function RccResults({
                   </TableCell>
                   <TableCell className="min-w-[40ch] font-mono text-xs">
                     {row.path}
+                  </TableCell>
+                  <TableCell className="min-w-[18ch] font-mono text-xs">
+                    {row.lastChangedTag}
                   </TableCell>
                 </TableRow>
               ))}
