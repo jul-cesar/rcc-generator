@@ -6,15 +6,20 @@ import { rccFilename, rowsToTsv } from "../lib/rcc/tsv"
 test("formats RCC rows as safe tab-separated text", () => {
   const tsv = rowsToTsv([
     {
-      path: "src/archivo ñ.ts",
-      action: "A",
-      lastChangedTag: "develop_v1",
+      path: "src/ultimo.ts",
+      action: "M",
+      lastChangedTag: "develop_v10",
     },
     {
       path: "src/nuevo\tarchivo.ts",
       previousPath: "src/anterior\narchivo.ts",
       action: "M",
       lastChangedTag: "develop_v2",
+    },
+    {
+      path: "src/archivo ñ.ts",
+      action: "A",
+      lastChangedTag: "develop_v1",
     },
   ])
 
@@ -24,6 +29,7 @@ test("formats RCC rows as safe tab-separated text", () => {
       "Orden de Instalación\tPasos\tAcción\tDirectorio|Objeto|\tTag/Versión",
       "1\t\tA\tsrc/archivo ñ.ts\tdevelop_v1",
       "2\t\tM\tsrc/nuevo archivo.ts\tdevelop_v2",
+      "3\t\tM\tsrc/ultimo.ts\tdevelop_v10",
     ].join("\n")
   )
 })

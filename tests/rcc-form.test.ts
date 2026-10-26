@@ -1,8 +1,11 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
+import { createElement } from "react"
+import { renderToStaticMarkup } from "react-dom/server"
 
 import {
   formatDeploymentTagLabel,
+  RccForm,
   resolveRangeSelection,
 } from "../components/rcc-form"
 
@@ -58,4 +61,30 @@ test("uses initial mode for the first deployment", () => {
     mode: "initial",
     fromTag: "",
   })
+})
+
+test("renders the RCC type with the motion select", () => {
+  const html = renderToStaticMarkup(
+    createElement(RccForm, {
+      projects: [],
+      repositories: [],
+      tags: [],
+      projectId: "",
+      repositoryId: "",
+      mode: "incremental",
+      fromTag: "",
+      toTag: "",
+      loading: null,
+      onProjectChange() {},
+      onRepositoryChange() {},
+      onModeChange() {},
+      onFromTagChange() {},
+      onToTagChange() {},
+      onSubmit() {},
+    })
+  )
+
+  assert.match(html, /RCC incremental/)
+  assert.match(html, /z-\[9999\]/)
+  assert.doesNotMatch(html, /data-slot="select-trigger"/)
 })

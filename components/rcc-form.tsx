@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import type {
   DeploymentTag,
   ProjectSummary,
@@ -9,21 +8,20 @@ import type {
 import {
   Combobox,
   ComboboxContent,
-  ComboboxControl,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  createComboboxItems,
-} from "@/components/ui/combobox"
-import { Button } from "@/components/ui/button"
+  ComboboxTrigger,
+} from "@/components/motion/combobox"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/motion/select"
+import { Button } from "@/components/ui/button"
 import { LoaderCircle, Search } from "lucide-react"
 
 export type RccMode = "initial" | "incremental"
@@ -96,17 +94,12 @@ function SelectField({
         {label}
       </label>
       <Select
-        items={Object.fromEntries(
-          options.map((option) => [option.value, option.label])
-        )}
-        value={value || null}
-        onValueChange={(nextValue) => nextValue && onChange(nextValue)}
+        id={id}
+        value={value || undefined}
+        onValueChange={onChange}
         disabled={disabled}
       >
-        <SelectTrigger
-          id={id}
-          className="w-full rounded-xl border-border bg-background"
-        >
+        <SelectTrigger className="w-full rounded-xl border-border bg-background">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -121,8 +114,6 @@ function SelectField({
   )
 }
 
-type FieldOption = FieldProps["options"][number]
-
 function ComboboxField({
   id,
   label,
@@ -132,39 +123,32 @@ function ComboboxField({
   disabled,
   onChange,
 }: FieldProps) {
-  const items = React.useMemo(
-    () =>
-      createComboboxItems(options, {
-        getValue: (option) => option.value,
-        getLabel: (option) => option.label,
-      }),
-    [options]
-  )
-
   return (
     <div className="grid gap-2">
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
       <Combobox
-        items={items}
-        autoHighlight
-        value={value || null}
-        onValueChange={(nextValue) => nextValue && onChange(nextValue)}
+        value={value || undefined}
+        onValueChange={onChange}
         disabled={disabled}
       >
-        <ComboboxControl>
+        <ComboboxTrigger>
           <ComboboxInput id={id} placeholder={placeholder} />
-        </ComboboxControl>
+        </ComboboxTrigger>
         <ComboboxContent>
-          <ComboboxEmpty />
-          <ComboboxList>
-            {(option: FieldOption) => (
-              <ComboboxItem key={option.value} value={option.value}>
+          <ComboboxList ariaLabel={label}>
+            {options.map((option) => (
+              <ComboboxItem
+                key={option.value}
+                value={option.value}
+                textValue={option.label}
+              >
                 {option.label}
               </ComboboxItem>
-            )}
+            ))}
           </ComboboxList>
+          <ComboboxEmpty>Sin resultados.</ComboboxEmpty>
         </ComboboxContent>
       </Combobox>
     </div>
