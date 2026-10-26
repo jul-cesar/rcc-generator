@@ -12,6 +12,11 @@ import {
 import { RccLoadingOverlay } from "@/components/rcc-loading-overlay"
 import { RccResults } from "@/components/rcc-results"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  parseRccSearchParams,
+  rccSearchParams,
+  type RccSearchSelection,
+} from "@/lib/rcc/search-params"
 import type {
   DeploymentTag,
   ProjectSummary,
@@ -46,6 +51,64 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return body
 }
 
+function requestRcc(repositoryId: string, request: RccRequest) {
+  return requestJson<RccResult>(
+    `/api/repositories/${encodeURIComponent(repositoryId)}/rcc`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+    }
+  )
+}
+
+async function loadSharedSearch(
+  selection: RccSearchSelection,
+  projects: readonly ProjectSummary[]
+) {
+  if (!projects.some((project) => project.id === selection.projectId)) {
+    throw new Error("El proyecto del enlace compartido ya no está disponible")
+  }
+
+  const repositoriesResponse = await requestJson<RepositoriesResponse>(
+    `/api/projects/${encodeURIComponent(selection.projectId)}/repositories`
+  )
+  if (
+    !repositoriesResponse.repositories.some(
+      (repository) => repository.id === selection.repositoryId
+    )
+  ) {
+    throw new Error(
+      "El repositorio del enlace compartido ya no está disponible"
+    )
+  }
+
+  const tagsResponse = await requestJson<TagsResponse>(
+    `/api/repositories/${encodeURIComponent(selection.repositoryId)}/tags?projectId=${encodeURIComponent(selection.projectId)}`
+  )
+  const requestedTags =
+    selection.request.mode === "initial"
+      ? [selection.request.toTag]
+      : [selection.request.fromTag, selection.request.toTag]
+  if (
+    requestedTags.some(
+      (requestedTag) =>
+        !tagsResponse.tags.some((tag) => tag.name === requestedTag)
+    )
+  ) {
+    throw new Error(
+      "Uno o más tags del enlace compartido ya no están disponibles"
+    )
+  }
+
+  return {
+    repositories: repositoriesResponse.repositories,
+    tags: tagsResponse.tags,
+    warnings: tagsResponse.warnings,
+    result: await requestRcc(selection.repositoryId, selection.request),
+  }
+}
+
 export function RccWorkbench() {
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [repositories, setRepositories] = useState<RepositorySummary[]>([])
@@ -63,17 +126,58 @@ export function RccWorkbench() {
 
   useEffect(() => {
     let active = true
-    requestJson<ProjectsResponse>("/api/projects")
-      .then((response) => {
-        if (active) setProjects(response.projects)
-      })
-      .catch((cause: unknown) => {
-        if (active)
+
+    async function load() {
+      try {
+        const response = await requestJson<ProjectsResponse>("/api/projects")
+        if (!active) return
+        setProjects(response.projects)
+
+        const params = new URLSearchParams(window.location.search)
+        const selection = parseRccSearchParams(params)
+        const hasSharedSearch = [
+          "project",
+          "repository",
+          "mode",
+          "fromTag",
+          "toTag",
+        ].some((key) => params.has(key))
+        if (!selection) {
+          if (hasSharedSearch) {
+            throw new Error(
+              "El enlace compartido está incompleto o no es válido"
+            )
+          }
+          return
+        }
+
+        setLoading("rcc")
+        const restored = await loadSharedSearch(selection, response.projects)
+        if (!active) return
+        setProjectId(selection.projectId)
+        setRepositoryId(selection.repositoryId)
+        setMode(selection.request.mode)
+        setFromTag(
+          selection.request.mode === "incremental"
+            ? selection.request.fromTag
+            : ""
+        )
+        setToTag(selection.request.toTag)
+        setRepositories(restored.repositories)
+        setTags(restored.tags)
+        setWarnings(restored.warnings)
+        setResult(restored.result)
+        setLastRequest(selection.request)
+      } catch (cause) {
+        if (active) {
           setError(cause instanceof Error ? cause.message : "Error desconocido")
-      })
-      .finally(() => {
+        }
+      } finally {
         if (active) setLoading(null)
-      })
+      }
+    }
+
+    void load()
     return () => {
       active = false
     }
@@ -154,16 +258,15 @@ export function RccWorkbench() {
     setError("")
     setResult(null)
     try {
-      const response = await requestJson<RccResult>(
-        `/api/repositories/${encodeURIComponent(repositoryId)}/rcc`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(request),
-        }
-      )
+      const response = await requestRcc(repositoryId, request)
       setResult(response)
       setLastRequest(request)
+      const params = rccSearchParams({ projectId, repositoryId, request })
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params}${window.location.hash}`
+      )
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "No fue posible generar el RCC"

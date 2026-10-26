@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { Check, Clipboard, Download, FileDiff } from "lucide-react"
 
+import { ActionSwapButton } from "@/components/motion/action-swap"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { RccRequest, RccResult } from "@/lib/rcc/types"
-import { rccFilename, rowsToTsv } from "@/lib/rcc/tsv"
+import { rccFilename, rowsToTsv, sortRccRows } from "@/lib/rcc/tsv"
 
 interface RccResultsProps {
   result: RccResult
@@ -28,7 +28,9 @@ export function RccResults({
   repositoryName,
 }: RccResultsProps) {
   const [copied, setCopied] = useState(false)
-  const content = rowsToTsv(result.rows)
+  const [downloaded, setDownloaded] = useState(false)
+  const rows = sortRccRows(result.rows)
+  const content = rowsToTsv(rows)
 
   async function copyRows() {
     await navigator.clipboard.writeText(content)
@@ -45,6 +47,8 @@ export function RccResults({
     anchor.download = rccFilename(repositoryName, request)
     anchor.click()
     URL.revokeObjectURL(url)
+    setDownloaded(true)
+    window.setTimeout(() => setDownloaded(false), 1800)
   }
 
   return (
@@ -67,18 +71,29 @@ export function RccResults({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => void copyRows()}>
-            {copied ? (
-              <Check data-icon="inline-start" />
-            ) : (
-              <Clipboard data-icon="inline-start" />
-            )}
-            {copied ? "Copiado" : "Copiar para Excel"}
-          </Button>
-          <Button variant="secondary" onClick={downloadRows}>
-            <Download data-icon="inline-start" />
-            Descargar TXT
-          </Button>
+          <ActionSwapButton
+            items={[
+              {
+                id: "copy",
+                label: "Copiar para Excel",
+                icon: <Clipboard />,
+              },
+              { id: "copied", label: "Copiado", icon: <Check /> },
+            ]}
+            value={copied ? "copied" : "copy"}
+            cycle={false}
+            variant="outline"
+            onClick={() => void copyRows()}
+          />
+          <ActionSwapButton
+            items={[
+              { id: "download", label: "Descargar TXT", icon: <Download /> },
+              { id: "downloaded", label: "Descargado", icon: <Check /> },
+            ]}
+            value={downloaded ? "downloaded" : "download"}
+            cycle={false}
+            onClick={downloadRows}
+          />
         </div>
       </div>
 
@@ -117,7 +132,7 @@ export function RccResults({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {result.rows.map((row, index) => (
+              {rows.map((row, index) => (
                 <TableRow key={`${row.action}:${row.path}`}>
                   <TableCell className="text-center font-mono text-xs tabular-nums">
                     {index + 1}
@@ -144,7 +159,11 @@ export function RccResults({
       )}
 
       <p className="sr-only" aria-live="polite">
-        {copied ? "Datos copiados al portapapeles" : ""}
+        {copied
+          ? "Datos copiados al portapapeles"
+          : downloaded
+            ? "Archivo descargado"
+            : ""}
       </p>
     </section>
   )

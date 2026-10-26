@@ -43,3 +43,29 @@ test("renders the Excel column order and installation sequence", () => {
   assert.match(html, />develop_v1<\/td>/)
   assert.doesNotMatch(html, /Ruta anterior/)
 })
+
+test("orders complete rows by tag version from oldest to newest", () => {
+  const html = renderToStaticMarkup(
+    createElement(RccResults, {
+      repositoryName: "repo",
+      request: {
+        mode: "incremental",
+        fromTag: "develop_v1",
+        toTag: "develop_v10",
+      },
+      result: {
+        mode: "incremental",
+        from: { tag: "develop_v1", sha: "one" },
+        to: { tag: "develop_v10", sha: "ten" },
+        rows: [
+          { path: "src/ten.ts", action: "M", lastChangedTag: "develop_v10" },
+          { path: "src/two.ts", action: "M", lastChangedTag: "develop_v2" },
+        ],
+        warnings: [],
+      },
+    })
+  )
+
+  assert.ok(html.indexOf("src/two.ts") < html.indexOf("src/ten.ts"))
+  assert.ok(html.indexOf("develop_v2") < html.indexOf("develop_v10"))
+})
