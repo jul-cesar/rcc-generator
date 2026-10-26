@@ -85,5 +85,6 @@ test("renders the RCC type with the motion select", () => {
   )
 
   assert.match(html, /RCC incremental/)
+  assert.match(html, /z-\[9999\]/)
   assert.doesNotMatch(html, /data-slot="select-trigger"/)
 })

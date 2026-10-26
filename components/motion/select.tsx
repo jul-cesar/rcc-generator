@@ -471,7 +471,7 @@ export function SelectContent({ className, children }: SelectContentProps) {
       // flush against the trigger, then separates into its own rounded pill;
       // sits above or below depending on available space
       className={cn(
-        "absolute right-0 left-0 z-20 overflow-hidden border border-border bg-background shadow-lg",
+        "absolute right-0 left-0 z-[9999] overflow-hidden border border-border bg-background text-popover-foreground shadow-lg",
         isTop ? "bottom-full" : "top-full",
         className
       )}
